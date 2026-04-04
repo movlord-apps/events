@@ -132,33 +132,34 @@ function render(focusId = null) {
             descInput.className = 'date-desc-input';
             descInput.placeholder = "Описание...";
             descInput.value = dateObj.desc;
-            descInput.dataset.descId = dateObj.id; // Маркер для фокуса описания
+            descInput.dataset.descId = dateObj.id;
 
-            // Установка фокуса для описания
             if (focusId === dateObj.id) {
                 setTimeout(() => descInput.focus(), 0);
             }
 
             descInput.oninput = (e) => {
-                const pos = e.target.selectionStart;
                 dateObj.desc = e.target.value;
-                const oldLen = event.dates.length;
-                manageDates(event);
-
-                // Если количество блоков изменилось, рендерим всё
-                if (event.dates.length !== oldLen) {
+                // Если начали печатать в "черновике", нам нужно перерисовать, 
+                // чтобы черновик превратился в обычный блок и создался новый черновик
+                if (dateObj.id === 'draft-' + event.id && dateObj.desc.length === 1) {
+                    // Генерируем нормальный ID вместо draft, чтобы блок зафиксировался
+                    dateObj.id = Date.now();
+                    manageDates(event);
                     render(dateObj.id);
-                } else {
-                    // Если просто печатаем — сохраняем локально без полного рендера 
-                    // (чтобы flatpickr не переинициализировался на каждом символе)
-                    saveLocal();
                 }
+                saveLocal();
             };
 
             descInput.onblur = () => {
+                // Когда уходим из поля, проверяем: если оно стало пустым, 
+                // manageDates его удалит, а render скроет
                 const oldLen = event.dates.length;
                 manageDates(event);
-                if (event.dates.length !== oldLen) render();
+                if (event.dates.length !== oldLen) {
+                    render();
+                }
+                saveLocal();
             };
 
             dateItem.appendChild(topRow);
@@ -171,6 +172,10 @@ function render(focusId = null) {
                 defaultDate: dateObj.val,
                 onChange: (selectedDates, dateStr) => {
                     dateObj.val = dateStr;
+                    // Если дата выбрана в черновике, превращаем его в обычный блок
+                    if (dateObj.id === 'draft-' + event.id) {
+                        dateObj.id = Date.now();
+                    }
                     manageDates(event);
                     render();
                     saveLocal();
@@ -270,6 +275,12 @@ async function saveToGist() {
  * Логика авто-добавления и удаления пустых блоков
  */
 function manageDates(event) {
+    const filledDates = event.dates.filter(d => d.val.trim() !== '' || d.desc.trim() !== '');
+    if (event.name.trim() !== '') {
+        event.dates = [...filledDates, { id: 'draft-' + event.id, val: '', desc: '' }];
+    } else {
+        event.dates = filledDates;
+    }
     const hasName = event.name.trim().length > 0;
 
     // Если имени нет и дат нет — ничего не делаем
