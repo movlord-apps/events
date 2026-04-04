@@ -153,6 +153,7 @@ function buildDateItem(event, dateObj, datesList) {
         locale: 'ru',
         dateFormat: 'd.m.Y',
         defaultDate: dateObj.val || null,
+        allowInput: true,
         onChange: (_, dateStr) => {
             dateObj.val = dateStr;
             if (dateObj.isDraft) promoteDraft(dateObj);
