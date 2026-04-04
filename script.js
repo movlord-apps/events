@@ -1,6 +1,3 @@
-const STORAGE_KEY = 'events_app_data';
-localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
 let state = {
     events: []
 };
