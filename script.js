@@ -51,10 +51,12 @@ function removeEmptyEvents() {
 }
 
 function syncDraftDate(event) {
-    // Гарантирует ровно один черновик в конце, если у события есть имя
     const realDates = event.dates.filter(d => !d.isDraft);
     if (event.name.trim().length > 0) {
-        event.dates = [...realDates, createDraftDate(event.id)];
+        // Проверяем, нет ли уже черновика в памяти
+        if (!event.dates.some(d => d.isDraft)) {
+            event.dates.push(createDraftDate(event.id));
+        }
     } else {
         event.dates = realDates;
     }
@@ -352,12 +354,13 @@ function addEvent() {
 }
 
 function stateForStorage() {
-    // Черновики — UI-состояние, в JSON не сохраняем
     return {
         ...state,
         events: state.events.map(event => ({
             ...event,
-            dates: event.dates.filter(d => !d.isDraft)
+            dates: event.dates
+                .filter(d => !d.isDraft)
+                .map(({ isDraft, ...rest }) => rest)
         }))
     };
 }
@@ -732,4 +735,22 @@ function renderLabelCell(event, row) {
     };
 
     return cell;
+}
+
+function processLoadedData(data) {
+    state = data;
+    if (!state.labels) state.labels = [];
+
+    state.events.forEach(event => {
+        if (!event.labelId) event.labelId = null; // Переход на одиночное поле
+
+        // Помечаем все загруженные даты как реальные
+        event.dates.forEach(d => {
+            d.isDraft = false;
+        });
+
+        // Добавляем пустой черновик в конец (только в ОЗУ)
+        syncDraftDate(event);
+    });
+    render();
 }
