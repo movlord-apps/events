@@ -389,9 +389,20 @@ function addEvent() {
     saveLocal();
 }
 
+function stateForStorage() {
+    // Черновики — UI-состояние, в JSON не сохраняем
+    return {
+        ...state,
+        events: state.events.map(event => ({
+            ...event,
+            dates: event.dates.filter(d => !d.isDraft)
+        }))
+    };
+}
+
 function saveLocal() {
     state.updatedAt = new Date().toISOString();
-    localStorage.setItem('event_app_data', JSON.stringify(state));
+    localStorage.setItem('event_app_data', JSON.stringify(stateForStorage()));
     document.getElementById('sync-status').innerText =
         'Локально сохранено: ' + new Date().toLocaleTimeString();
 }
@@ -421,7 +432,11 @@ async function loadFromGist() {
         }
 
         state = remote;
-        normalizeDraftFlags();
+        if (!state.labels) state.labels = [];
+        state.events.forEach(event => {
+            if (!event.labelIds) event.labelIds = [];
+            syncDraftDate(event);
+        });
         render();
         document.getElementById('sync-status').innerText =
             'Данные загружены из Gist (' + new Date(remoteTs).toLocaleTimeString() + ')';
@@ -445,7 +460,7 @@ async function saveToGist() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } }
+                files: { [GIST_FILENAME]: { content: JSON.stringify(stateForStorage(), null, 2) } }
             })
         });
 
@@ -489,23 +504,15 @@ function saveSettings() {
 
 // --- Инициализация ---
 
-function normalizeDraftFlags() {
-    if (!state.labels) state.labels = [];
-    state.events.forEach(event => {
-        if (!event.labelIds) event.labelIds = [];
-        event.dates.forEach(d => {
-            if (d.isDraft === undefined) {
-                d.isDraft = d.val.trim() === '' && d.desc.trim() === '';
-            }
-        });
-    });
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     const local = localStorage.getItem('event_app_data');
     if (local) {
         state = JSON.parse(local);
-        normalizeDraftFlags();
+        if (!state.labels) state.labels = [];
+        state.events.forEach(event => {
+            if (!event.labelIds) event.labelIds = [];
+            syncDraftDate(event);
+        });
         render();
     }
 
