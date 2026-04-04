@@ -267,6 +267,7 @@ async function loadFromGist() {
         }
 
         state = remote;
+        normalizeDraftFlags();
         render();
         document.getElementById('sync-status').innerText =
             'Данные загружены из Gist (' + new Date(remoteTs).toLocaleTimeString() + ')';
@@ -334,17 +335,30 @@ function saveSettings() {
 
 // --- Инициализация ---
 
+function normalizeDraftFlags() {
+    // Совместимость со старыми данными без флага isDraft:
+    // дата считается черновиком если val и desc пустые
+    state.events.forEach(event => {
+        event.dates.forEach(d => {
+            if (d.isDraft === undefined) {
+                d.isDraft = d.val.trim() === '' && d.desc.trim() === '';
+            }
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const local = localStorage.getItem('event_app_data');
     if (local) {
         state = JSON.parse(local);
+        normalizeDraftFlags();
         render();
     }
 
     if (getToken() && GIST_ID) loadFromGist();
 
     document.getElementById('add-event-btn').onclick = addEvent;
-    document.getElementById('sort-btn').onclick = sortAll;
+    document.getElementById('sort-btn').addEventListener('click', (e) => { e.preventDefault(); sortAll(); });
     document.getElementById('sync-btn').onclick = saveToGist;
     document.getElementById('settings-btn').onclick = openSettings;
     document.getElementById('settings-save').onclick = saveSettings;
