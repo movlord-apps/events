@@ -34,20 +34,8 @@
     <div id="settings-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <h3>Настройки GitHub Gist</h3>
-
-            <label class="settings-label">
-                GitHub Token
-                <span class="settings-hint">Хранится в sessionStorage (сбрасывается при закрытии вкладки)</span>
-            </label>
-            <input id="settings-token" type="password" class="settings-field" placeholder="ghp_xxxxxxxxxxxx"
-                autocomplete="off" />
-
-            <label class="settings-label" style="margin-top: 14px;">
-                Gist ID
-                <span class="settings-hint">Хранится в localStorage</span>
-            </label>
-            <input id="settings-gist" type="text" class="settings-field" placeholder="1afd0be..." autocomplete="off" />
-
+            <p>Введите Token (1-я строка) и Gist ID (2-я строка):</p>
+            <textarea id="settings-input" placeholder="ghp_xxx...&#10;1afd0be..."></textarea>
             <div class="modal-actions">
                 <button id="settings-cancel" class="btn">Отмена</button>
                 <button id="settings-save" class="btn btn-primary">ОК</button>

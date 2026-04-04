@@ -312,19 +312,20 @@ function toggleModal(show) {
 }
 
 function openSettings() {
-    document.getElementById('settings-token').value = '';
-    document.getElementById('settings-gist').value = GIST_ID;
+    const input = document.getElementById('settings-input');
+    // Показываем только Gist ID, токен не восстанавливаем
+    input.value = GIST_ID ? `${GITHUB_TOKEN}\n${GIST_ID}` : '';
     toggleModal(true);
 }
 
 function saveSettings() {
-    const tokenInput = document.getElementById('settings-token').value.trim();
-    const gistInput = document.getElementById('settings-gist').value.trim();
+    const lines = document.getElementById('settings-input').value
+        .split('\n').map(l => l.trim()).filter(Boolean);
 
-    if (!gistInput) { alert('Введите Gist ID'); return; }
-    if (tokenInput) setToken(tokenInput);
+    if (lines.length < 2) { alert('Введите две строки: Токен и Gist ID'); return; }
 
-    GIST_ID = gistInput;
+    setToken(lines[0]);
+    GIST_ID = lines[1];
     localStorage.setItem('gh_gist_id', GIST_ID);
     toggleModal(false);
 
