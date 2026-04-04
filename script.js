@@ -455,7 +455,12 @@ async function saveToGist() {
 
         if (res.ok) {
             isDirty = false; // СБРОС ФЛАГА: данные на сервере теперь идентичны локальным
-            status.innerText = 'Синхронизировано с Gist: ' + new Date().toLocaleTimeString();
+            status.innerText = 'Синхронизировано с Gist: ' + new Date().toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
         } else {
             const err = await res.json();
             status.innerText = 'Ошибка Gist: ' + (err.message || 'API Error');
