@@ -68,39 +68,38 @@ function render(focusId = null) {
         const row = document.createElement('div');
         row.className = 'event-row';
 
-        // 1. Поле названия
         const nameInput = document.createElement('input');
         nameInput.className = 'event-name-input';
         nameInput.value = event.name;
         nameInput.placeholder = "Название события...";
-        nameInput.dataset.eventId = event.id; // Уникальный маркер для фокуса
+        nameInput.dataset.eventId = event.id;
 
-        // Умная установка фокуса для названия
         if (focusId === event.id) {
-            setTimeout(() => {
-                nameInput.focus();
-                // Не сбрасываем курсор в конец, если пользователь печатает в середине
-                // (Браузер сам сохранит позицию, если мы просто вызовем focus())
-            }, 0);
+            setTimeout(() => nameInput.focus(), 0);
         }
 
         nameInput.oninput = (e) => {
-            const pos = e.target.selectionStart; // Запоминаем позицию курсора
             event.name = e.target.value;
             manageDates(event);
-            render(event.id); // Перерисовываем, сохраняя фокус
+            // Рендерим только если это первый символ (чтобы появился блок даты)
+            if (event.name.length === 1 && event.dates.length === 1) {
+                render(event.id);
+            }
+            saveLocal();
+        };
 
-            // Восстанавливаем позицию курсора после рендера
-            const el = document.querySelector(`[data-event-id="${event.id}"]`);
-            if (el) el.setSelectionRange(pos, pos);
-
+        nameInput.onblur = () => {
+            event.name = event.name.trim(); // Обрезаем пробелы
+            manageEvents(); // Удаляем, если пустое
+            state.events.forEach(manageDates); // Обновляем черновики дат
+            render();
             saveLocal();
         };
 
         const datesList = document.createElement('div');
         datesList.className = 'dates-list';
 
-        event.dates.forEach((dateObj, index) => {
+        event.dates.forEach((dateObj) => {
             const dateItem = document.createElement('div');
             dateItem.className = 'date-item';
 
@@ -114,8 +113,10 @@ function render(focusId = null) {
 
             topRow.appendChild(dInput);
 
-            const isBlockEmpty = !dateObj.val && !dateObj.desc;
-            if (!isBlockEmpty) {
+            const isDraft = String(dateObj.id).startsWith('draft');
+            const isFilled = dateObj.val.trim() !== '' || dateObj.desc.trim() !== '';
+
+            if (isFilled) {
                 const delDateBtn = document.createElement('button');
                 delDateBtn.className = 'btn btn-danger btn-small';
                 delDateBtn.innerText = '✕';
@@ -140,10 +141,8 @@ function render(focusId = null) {
 
             descInput.oninput = (e) => {
                 dateObj.desc = e.target.value;
-                // Если начали печатать в "черновике", нам нужно перерисовать, 
-                // чтобы черновик превратился в обычный блок и создался новый черновик
-                if (dateObj.id === 'draft-' + event.id && dateObj.desc.length === 1) {
-                    // Генерируем нормальный ID вместо draft, чтобы блок зафиксировался
+                // Если начали писать в черновике — превращаем его в реальный блок
+                if (isDraft && dateObj.desc.trim() !== '') {
                     dateObj.id = Date.now();
                     manageDates(event);
                     render(dateObj.id);
@@ -152,13 +151,10 @@ function render(focusId = null) {
             };
 
             descInput.onblur = () => {
-                // Когда уходим из поля, проверяем: если оно стало пустым, 
-                // manageDates его удалит, а render скроет
-                const oldLen = event.dates.length;
+                dateObj.desc = dateObj.desc.trim(); // Обрезаем пробелы
                 manageDates(event);
-                if (event.dates.length !== oldLen) {
-                    render();
-                }
+                manageEvents(); // Проверяем, не стало ли всё событие пустым
+                render();
                 saveLocal();
             };
 
@@ -172,10 +168,7 @@ function render(focusId = null) {
                 defaultDate: dateObj.val,
                 onChange: (selectedDates, dateStr) => {
                     dateObj.val = dateStr;
-                    // Если дата выбрана в черновике, превращаем его в обычный блок
-                    if (dateObj.id === 'draft-' + event.id) {
-                        dateObj.id = Date.now();
-                    }
+                    if (isDraft) dateObj.id = Date.now();
                     manageDates(event);
                     render();
                     saveLocal();
@@ -187,7 +180,7 @@ function render(focusId = null) {
         controls.className = 'row-controls';
         const delEventBtn = document.createElement('button');
         delEventBtn.className = 'btn btn-danger btn-small';
-        delEventBtn.innerText = 'Удалить событие';
+        delEventBtn.innerText = 'Удалить';
         delEventBtn.onclick = () => {
             state.events = state.events.filter(e => e.id !== event.id);
             render();
@@ -201,7 +194,6 @@ function render(focusId = null) {
         list.appendChild(row);
     });
 }
-
 // --- Функции данных ---
 function addEvent() {
     const newId = Date.now(); // Генерируем уникальный ID
@@ -271,38 +263,28 @@ async function saveToGist() {
     }
 }
 
+function manageEvents() {
+    state.events = state.events.filter(e => {
+        const hasName = e.name.trim() !== '';
+        // Проверяем, есть ли хоть одна заполненная дата (игнорируя черновики)
+        const hasRealDates = e.dates.some(d =>
+            (d.val.trim() !== '' || d.desc.trim() !== '') && !String(d.id).startsWith('draft')
+        );
+        return hasName || hasRealDates;
+    });
+}
+
 /**
  * Логика авто-добавления и удаления пустых блоков
  */
 function manageDates(event) {
+    // 1. Оставляем только заполненные даты
     const filledDates = event.dates.filter(d => d.val.trim() !== '' || d.desc.trim() !== '');
-    if (event.name.trim() !== '') {
+
+    // 2. Если у события есть название (даже не обрезанное пока), добавляем один пустой черновик
+    if (event.name.length > 0) {
         event.dates = [...filledDates, { id: 'draft-' + event.id, val: '', desc: '' }];
     } else {
         event.dates = filledDates;
-    }
-    const hasName = event.name.trim().length > 0;
-
-    // Если имени нет и дат нет — ничего не делаем
-    if (!hasName && event.dates.length === 0) return;
-
-    // Если имя ввели впервые (дат еще 0) — создаем первый пустой блок
-    if (hasName && event.dates.length === 0) {
-        event.dates.push({ id: Date.now(), val: '', desc: '' });
-        return;
-    }
-
-    // Стандартная очистка: удаляем пустые блоки, кроме последнего
-    const lastIndex = event.dates.length - 1;
-    event.dates = event.dates.filter((d, index) => {
-        const isFilled = d.val || d.desc;
-        // Оставляем блок, если он заполнен ИЛИ если он последний в списке
-        return isFilled || index === lastIndex;
-    });
-
-    // Если последний блок в списке заполнили — добавляем новый пустой "черновик"
-    const last = event.dates[event.dates.length - 1];
-    if (last && (last.val || last.desc)) {
-        event.dates.push({ id: Date.now() + 1, val: '', desc: '' });
     }
 }
