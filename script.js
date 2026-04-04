@@ -509,6 +509,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // Обработка горячих клавиш
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.code === 'KeyS') {
+            e.preventDefault();
+            saveToGist();
+        }
+    });
 });
 
 // --- Сортировка ---

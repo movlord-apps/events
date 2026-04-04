@@ -210,7 +210,11 @@ h1 {
 
 .date-item:last-child {
     border-style: dashed;
-    opacity: 0.7;
+    opacity: 0.2;
+}
+
+.date-item:last-child:hover {
+    opacity: 0.6;
 }
 
 .date-item:last-child:focus-within {
