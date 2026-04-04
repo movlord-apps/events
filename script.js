@@ -204,7 +204,7 @@ function buildLabelButton(event, row) {
     const btn = document.createElement('button');
     btn.className = 'btn btn-secondary btn-small label-btn';
     btn.title = 'Метки';
-    btn.textContent = '🏷';
+    btn.textContent = '🏷️';
 
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
