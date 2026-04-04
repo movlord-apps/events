@@ -264,7 +264,7 @@ function render(focusId = null) {
 
 function addEvent() {
     const event = createEvent();
-    state.events.push(event);
+    state.events.unshift(event);
     render(event.id);
     saveLocal();
 }
