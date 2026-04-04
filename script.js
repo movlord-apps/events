@@ -11,6 +11,7 @@ function setToken(token) {
 const GIST_FILENAME = 'events.json';
 
 let state = { events: [], labels: [], updatedAt: null };
+let isDirty = false;
 
 // --- Трекинг flatpickr-инстанций ---
 const flatpickrInstances = new Map();
@@ -382,10 +383,14 @@ function stateForStorage() {
 }
 
 function saveLocal() {
+    isDirty = true; // Данные изменились относительно Gist
     state.updatedAt = new Date().toISOString();
     localStorage.setItem('event_app_data', JSON.stringify(stateForStorage()));
-    document.getElementById('sync-status').innerText =
-        'Локально сохранено: ' + new Date().toLocaleTimeString();
+
+    const statusEl = document.getElementById('sync-status');
+    if (statusEl) {
+        statusEl.innerText = 'Локально сохранено (есть изменения для Gist)';
+    }
 }
 
 async function loadFromGist() {
@@ -413,6 +418,7 @@ async function loadFromGist() {
         }
 
         state = remote;
+        isDirty = false;
         if (!state.labels) state.labels = [];
         state.events.forEach(event => {
             if (!event.labelIds) event.labelIds = [];
@@ -446,6 +452,7 @@ async function saveToGist() {
         });
 
         if (res.ok) {
+            isDirty = false; // СБРОС ФЛАГА: данные на сервере теперь идентичны локальным
             status.innerText = 'Синхронизировано с Gist: ' + new Date().toLocaleTimeString();
         } else {
             const err = await res.json();
@@ -457,7 +464,6 @@ async function saveToGist() {
 }
 
 // --- Настройки ---
-
 function toggleModal(show) {
     document.getElementById('settings-modal').style.display = show ? 'flex' : 'none';
 }
@@ -532,6 +538,32 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             saveToGist();
         }
+    });
+
+    // Синхронизация при закрытии вкладки или уходе со страницы
+    window.addEventListener('pagehide', () => {
+        const token = getToken();
+        // Проверяем наличие ключей и данных
+        if (!isDirty || !token || !GIST_ID) return;
+
+        const url = `https://api.github.com/gists/${GIST_ID}`;
+        const body = JSON.stringify({
+            files: {
+                [GIST_FILENAME]: {
+                    content: JSON.stringify(stateForStorage(), null, 2)
+                }
+            }
+        });
+
+        fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: body,
+            keepalive: true // Магия здесь
+        });
     });
 });
 
