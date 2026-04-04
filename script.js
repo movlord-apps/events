@@ -302,8 +302,12 @@ function render(focusId = null) {
         if (focusId === event.id) {
             setTimeout(() => nameInput.focus(), 0);
         }
+        const countdownEl = document.createElement('div');
+        countdownEl.className = 'event-countdown';
+        countdownEl.textContent = getCountdownText(event);
 
         nameContainer.appendChild(nameInput);
+        nameContainer.appendChild(countdownEl);
 
         // --- 2. Ячейка категории (метки) ---
         const labelCell = renderLabelCell(event, row);
@@ -773,4 +777,27 @@ function processLoadedData(data) {
         syncDraftDate(event);
     });
     render();
+}
+
+function getCountdownText(event) {
+    const firstDate = firstRealDate(event);
+    if (!firstDate) return "-";
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const target = new Date(firstDate);
+    target.setHours(0, 0, 0, 0);
+
+    const diffTime = target - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return "наступило";
+    if (diffDays === 0) return "сегодня"; // Добавим для точности
+    if (diffDays > 365) return "> 1 года";
+    if (diffDays > 30) {
+        const months = Math.floor(diffDays / 30);
+        return `> ${months} мес.`;
+    }
+    return `${diffDays} дн.`;
 }
