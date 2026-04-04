@@ -204,7 +204,7 @@ function buildLabelButton(event, row) {
     const btn = document.createElement('button');
     btn.className = 'btn btn-secondary btn-small label-btn';
     btn.title = 'Метки';
-    btn.textContent = '🏷';
+    btn.textContent = '🏷️';
 
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -297,13 +297,10 @@ function render(focusId = null) {
             setTimeout(() => nameInput.focus(), 0);
         }
 
-        const labelBadges = buildLabelBadges(event);
-
-        const labelBtnWrap = document.createElement('div');
-        labelBtnWrap.className = 'label-btn-wrap';
-        labelBtnWrap.appendChild(buildLabelButton(event, row));
+        const labelCell = renderLabelCell(event, row);
 
         const datesList = document.createElement('div');
+
         datesList.className = 'dates-list';
 
         nameInput.oninput = (e) => {
@@ -338,8 +335,7 @@ function render(focusId = null) {
         controls.appendChild(delEventBtn);
 
         row.appendChild(nameInput);
-        row.appendChild(labelBadges);
-        row.appendChild(labelBtnWrap);
+        row.appendChild(labelCell);
         row.appendChild(datesList);
         row.appendChild(controls);
         list.appendChild(row);
@@ -669,4 +665,82 @@ function renderLabelsMgmt() {
     newRow.appendChild(newInp);
     newRow.appendChild(addBtn);
     container.appendChild(newRow);
+}
+
+function renderLabelCell(event, row) {
+    const cell = document.createElement('div');
+    cell.className = 'label-cell';
+
+    const labelId = (event.labelIds || [])[0];
+    const label = state.labels.find(l => l.id === labelId);
+
+    if (label) {
+        // Если метка выбрана — показываем только бейдж
+        const badge = document.createElement('span');
+        badge.className = 'label-badge';
+        badge.textContent = label.name;
+        badge.style.background = label.color;
+        badge.style.color = '#eee';
+        badge.title = label.name;
+        cell.appendChild(badge);
+    } else {
+        // Если не выбрана — показываем иконку 🏷️
+        const placeholder = document.createElement('span');
+        placeholder.className = 'label-placeholder';
+        placeholder.textContent = '🏷️';
+        cell.appendChild(placeholder);
+    }
+
+    // Клик по всей ячейке открывает меню
+    cell.onclick = (e) => {
+        e.stopPropagation();
+
+        // Закрываем другие открытые меню
+        const existing = document.querySelector('.label-dropdown');
+        if (existing) {
+            const parent = existing.parentElement;
+            existing.remove();
+            if (parent === cell) return; // Если кликнули по той же, просто закрываем
+        }
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'label-dropdown';
+
+        if (state.labels.length === 0) {
+            const item = document.createElement('div');
+            item.className = 'label-dropdown-item';
+            item.style.color = '#666';
+            item.textContent = 'Нет меток';
+            dropdown.appendChild(item);
+        }
+
+        state.labels.forEach(l => {
+            const item = document.createElement('div');
+            item.className = 'label-dropdown-item';
+            if (l.id === labelId) item.classList.add('label-dropdown-item--checked');
+
+            item.innerHTML = `
+                <span class="label-dot" style="background:${l.color}"></span>
+                <span>${l.name}</span>
+            `;
+
+            item.onclick = (e) => {
+                e.stopPropagation();
+                // Логика переключения (макс. 1 метка)
+                event.labelIds = (l.id === labelId) ? [] : [l.id];
+
+                dropdown.remove();
+                // Перерисовываем только эту ячейку
+                const newCell = renderLabelCell(event, row);
+                row.replaceChild(newCell, cell);
+                saveLocal();
+            };
+
+            dropdown.appendChild(item);
+        });
+
+        cell.appendChild(dropdown);
+    };
+
+    return cell;
 }

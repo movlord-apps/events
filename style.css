@@ -264,17 +264,23 @@ h1 {
 }
 
 .label-badge {
-    display: inline-block;
-    padding: 2px 8px;
+    display: block;
+    width: 100%;
+    padding: 2px 6px;
     border-radius: 10px;
     font-size: 11px;
+    text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    /* Троеточие, если имя длиннее 100px */
-    max-width: 100%;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     box-sizing: border-box;
+}
+
+.label-placeholder {
+    font-size: 14px;
+    opacity: 0.4;
+    transition: opacity 0.2s;
 }
 
 .label-btn-wrap {
@@ -295,13 +301,13 @@ h1 {
 
 .label-dropdown {
     position: absolute;
-    top: calc(100% + 4px);
+    top: calc(100% + 5px);
     left: 0;
-    z-index: 100;
+    z-index: 1000;
     background: #1e1e1e;
     border: 1px solid #333;
     border-radius: 4px;
-    min-width: 180px;
+    min-width: 160px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
     padding: 4px 0;
 }
@@ -461,4 +467,19 @@ h1 {
     border-top: 1px solid #333;
     display: flex;
     gap: 5px;
+}
+
+.label-cell {
+    width: 100px;
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.label-cell:hover .label-placeholder {
+    opacity: 1;
 }
