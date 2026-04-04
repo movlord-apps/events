@@ -4,27 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events</title>
+    <title>Event Manager</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <div class="container">
         <header>
-            <h1>Напоминания</h1>
-            <button id="add-event-btn" class="btn btn-primary">Добавить событие</button>
+            <h1>События</h1>
+            <button id="add-event-btn" class="btn btn-primary">+ Добавить событие</button>
         </header>
 
         <div id="events-list" class="events-list">
-            <!-- События будут добавляться сюда динамически -->
+            <!-- Строки событий будут здесь -->
         </div>
 
-        <div id="status-bar" class="status-bar">
-            <span id="sync-status">Локальное хранилище</span>
-            <button id="sync-btn" class="btn btn-small">Синхронизировать с Gist</button>
+        <div class="status-bar">
+            <span id="sync-status">Локальный режим</span>
+            <button id="sync-btn" class="btn btn-small">Обновить в Gist</button>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 

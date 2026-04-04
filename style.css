@@ -1,137 +1,127 @@
 :root {
-    --bg-color: #121212;
-    --card-bg: #1e1e1e;
-    --text-color: #e0e0e0;
-    --accent-color: #0078d4;
-    --danger-color: #d13438;
-    --border-color: #333;
+    --bg-color: #0f0f0f;
+    --row-bg: #1a1a1a;
+    --text-color: #efefef;
+    --accent: #0078d4;
+    --danger: #c42b1c;
+    --border: #333;
     --input-bg: #252525;
 }
 
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
     margin: 0;
-    display: flex;
-    justify-content: center;
-    min-height: 100vh;
+    padding: 20px;
 }
 
 .container {
-    width: 100%;
-    max-width: 800px;
-    padding: 20px;
+    max-width: 100%;
+    /* Оптимизировано под широкий экран */
 }
 
 header {
     display: flex;
-    justify-content: space-between;
+    gap: 20px;
     align-items: center;
-    margin-bottom: 30px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 h1 {
-    font-weight: 300;
+    font-weight: 400;
     margin: 0;
+    font-size: 24px;
 }
 
 /* Кнопки */
 .btn {
-    cursor: pointer;
     border: none;
     border-radius: 4px;
-    padding: 8px 16px;
-    font-size: 14px;
-    transition: opacity 0.2s;
-}
-
-.btn:hover {
-    opacity: 0.8;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
 }
 
 .btn-primary {
-    background-color: var(--accent-color);
+    background: var(--accent);
     color: white;
 }
 
 .btn-danger {
-    background-color: var(--danger-color);
+    background: var(--danger);
     color: white;
 }
 
 .btn-small {
     padding: 4px 8px;
-    font-size: 12px;
+    font-size: 11px;
 }
 
-/* Списки */
-.events-list {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
+/* Строка события */
 .event-row {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 15px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--row-bg);
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    /* Чтобы даты не вылезали за экран */
 }
 
-.event-header {
+.event-main {
     display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 10px;
+    gap: 8px;
+    width: 380px;
+    /* 300px инпут + кнопки и отступы */
+    flex-shrink: 0;
 }
 
 .event-name-input {
-    flex-grow: 1;
+    width: 300px;
     background: var(--input-bg);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border);
     color: white;
-    padding: 8px;
-    border-radius: 4px;
+    padding: 6px;
+    border-radius: 3px;
 }
 
-/* Подстроки (напоминания) */
-.reminders-container {
-    margin-left: 30px;
+/* Контейнер для дат */
+.dates-container {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 8px;
-    border-left: 2px solid var(--border-color);
-    padding-left: 15px;
-}
-
-.reminder-row {
-    display: flex;
-    gap: 10px;
     align-items: center;
 }
 
-input[type="datetime-local"],
-.reminder-desc-input {
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    color: white;
-    padding: 5px;
-    border-radius: 4px;
+.date-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 200px;
+    background: #2a2a2a;
+    padding: 4px;
+    border-radius: 3px;
+    border: 1px solid #444;
 }
 
-.reminder-desc-input {
-    flex-grow: 1;
+input[type="date"] {
+    background: transparent;
+    border: none;
+    color: white;
+    font-family: inherit;
+    font-size: 13px;
+    width: 100%;
 }
 
 /* Статус-бар */
 .status-bar {
-    margin-top: 40px;
+    margin-top: 30px;
     font-size: 12px;
-    color: #888;
+    color: #666;
     display: flex;
-    justify-content: space-between;
+    gap: 15px;
     align-items: center;
 }
