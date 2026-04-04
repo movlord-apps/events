@@ -253,11 +253,14 @@ h1 {
 /* --- Метки --- */
 
 .label-badges {
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
     display: flex;
-    gap: 5px;
-    flex-shrink: 0;
     align-items: center;
-    flex-wrap: nowrap;
+    overflow: hidden;
+    /* Прячем всё, что не влезает */
+    flex-shrink: 0;
 }
 
 .label-badge {
@@ -266,7 +269,12 @@ h1 {
     border-radius: 10px;
     font-size: 11px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Троеточие, если имя длиннее 100px */
+    max-width: 100%;
     border: 1px solid rgba(255, 255, 255, 0.08);
+    box-sizing: border-box;
 }
 
 .label-btn-wrap {

@@ -182,19 +182,19 @@ function buildLabelBadges(event) {
     const wrap = document.createElement('div');
     wrap.className = 'label-badges';
 
-    const labels = (event.labelIds || [])
-        .map(id => state.labels.find(l => l.id === id))
-        .filter(Boolean);
+    // Берем только первую метку из массива (теперь это категория)
+    const labelId = (event.labelIds || [])[0];
+    const label = state.labels.find(l => l.id === labelId);
 
-    labels.forEach(label => {
+    if (label) {
         const badge = document.createElement('span');
         badge.className = 'label-badge';
         badge.textContent = label.name;
         badge.style.background = label.color;
-        // Светлый текст на тёмном фоне (всегда тёмный фон по умолчанию)
         badge.style.color = '#ccc';
+        badge.title = label.name; // Подсказка при наведении, если текст обрезан
         wrap.appendChild(badge);
-    });
+    }
 
     return wrap;
 }
@@ -245,15 +245,20 @@ function buildLabelButton(event, row) {
 
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
+
                 if (!event.labelIds) event.labelIds = [];
+
                 if (checked) {
-                    event.labelIds = event.labelIds.filter(id => id !== label.id);
+                    // Если кликнули по уже выбранной — снимаем выделение
+                    event.labelIds = [];
                 } else {
-                    event.labelIds.push(label.id);
+                    // Если кликнули по новой — заменяем старую (эксклюзивный выбор)
+                    event.labelIds = [label.id];
                 }
+
                 closeAllLabelDropdowns();
 
-                // Обновляем только бейджи
+                // Обновляем бейджи в строке
                 const badges = row.querySelector('.label-badges');
                 const newBadges = buildLabelBadges(event);
                 row.replaceChild(newBadges, badges);
