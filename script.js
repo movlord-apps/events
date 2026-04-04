@@ -584,15 +584,21 @@ function toggleLabelsMenu(e) {
     if (e) e.stopPropagation();
     const dropdown = document.getElementById('labels-mgmt-dropdown');
     const isVisible = dropdown.style.display === 'flex';
-    dropdown.style.display = isVisible ? 'none' : 'flex';
-    if (!isVisible) renderLabelsMgmt();
+
+    if (!isVisible) {
+        dropdown.style.display = 'flex';
+        renderLabelsMgmt();
+    } else {
+        dropdown.style.display = 'none';
+    }
 }
 
 function renderLabelsMgmt() {
     const container = document.getElementById('labels-mgmt-dropdown');
+    // Не меняем display здесь, только контент
     container.innerHTML = '';
 
-    // Список существующих меток
+    // 1. Список существующих меток
     state.labels.forEach(label => {
         const row = document.createElement('div');
         row.className = 'label-mgmt-item';
@@ -605,7 +611,7 @@ function renderLabelsMgmt() {
         colorInp.onchange = (e) => {
             label.color = e.target.value;
             saveLocal();
-            render(); // Перерисовываем основной список, чтобы обновить цвета бейджей
+            render();
         };
 
         // Название
@@ -618,24 +624,22 @@ function renderLabelsMgmt() {
             render();
         };
 
-        // Кнопки
+        // Кнопка удаления
         const actions = document.createElement('div');
         actions.className = 'label-mgmt-actions';
 
         const delBtn = document.createElement('button');
         delBtn.className = 'btn-icon';
         delBtn.innerHTML = '🗑️';
-        delBtn.title = 'Удалить метку';
-        delBtn.onclick = () => {
-            // Удаляем метку из общего списка
+        delBtn.onclick = (e) => {
+            e.stopPropagation(); // Важно: не закрывать меню
             state.labels = state.labels.filter(l => l.id !== label.id);
-            // Удаляем ID метки из всех событий
             state.events.forEach(ev => {
                 if (ev.labelIds) ev.labelIds = ev.labelIds.filter(id => id !== label.id);
             });
             saveLocal();
-            renderLabelsMgmt();
-            render();
+            renderLabelsMgmt(); // Перерисовываем только содержимое
+            render(); // Обновляем основной список
         };
 
         actions.appendChild(delBtn);
@@ -645,25 +649,42 @@ function renderLabelsMgmt() {
         container.appendChild(row);
     });
 
-    // Строка создания новой метки
+    // 2. Строка создания новой метки
     const newRow = document.createElement('div');
     newRow.className = 'new-label-row';
-    newRow.innerHTML = `
-        <input type="text" id="new-label-name" class="label-mgmt-name" style="background:#111" placeholder="Новая метка...">
-        <button id="add-label-confirm" class="btn btn-primary btn-small">OK</button>
-    `;
-    container.appendChild(newRow);
 
-    container.querySelector('#add-label-confirm').onclick = () => {
-        const inp = container.querySelector('#new-label-name');
-        const name = inp.value.trim();
+    const newInp = document.createElement('input');
+    newInp.type = 'text';
+    newInp.id = 'new-label-name';
+    newInp.className = 'label-mgmt-name';
+    newInp.placeholder = 'Новая метка...';
+    newInp.style.background = '#111';
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn btn-primary btn-small';
+    addBtn.innerText = 'OK';
+
+    addBtn.onclick = (e) => {
+        e.stopPropagation(); // Важно: не закрывать меню
+        const name = newInp.value.trim();
         if (name) {
             state.labels.push({ id: 'label-' + Date.now(), name, color: '#0078d4' });
             saveLocal();
-            renderLabelsMgmt();
+            renderLabelsMgmt(); // Перерисовываем содержимое, меню остается открытым
             render();
+            // Опционально: вернуть фокус в поле ввода новой метки
+            document.getElementById('new-label-name').focus();
         }
     };
+
+    // Поддержка Enter в поле ввода
+    newInp.onkeydown = (e) => {
+        if (e.key === 'Enter') addBtn.click();
+    };
+
+    newRow.appendChild(newInp);
+    newRow.appendChild(addBtn);
+    container.appendChild(newRow);
 }
 
 // --- Инициализация ---
@@ -679,8 +700,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => {
         const dropdown = document.getElementById('labels-mgmt-dropdown');
         const btn = document.getElementById('labels-mgmt-btn');
-        if (dropdown && !dropdown.contains(e.target) && e.target !== btn) {
-            dropdown.style.display = 'none';
+
+        // Закрываем, только если клик НЕ по кнопке открытия И НЕ внутри самого меню
+        if (dropdown && dropdown.style.display === 'flex') {
+            if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
         }
     });
 });
