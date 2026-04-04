@@ -276,6 +276,8 @@ h1 {
     display: flex;
     gap: 20px;
     align-items: center;
+    margin-left: auto;
+    width: fit-content;
 }
 
 #sync-btn {
