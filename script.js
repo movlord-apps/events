@@ -60,7 +60,7 @@ function saveSettings() {
     }
 }
 
-function render() {
+function render(focusId = null) {
     const list = document.getElementById('events-list');
     list.innerHTML = '';
 
@@ -68,32 +68,34 @@ function render() {
         const row = document.createElement('div');
         row.className = 'event-row';
 
-        // 1. Поле названия (300px)
+        // 1. Поле названия
         const nameInput = document.createElement('input');
         nameInput.className = 'event-name-input';
         nameInput.value = event.name;
         nameInput.placeholder = "Название события...";
-        nameInput.dataset.eventId = event.id; // Для поиска элемента после рендера
+        nameInput.dataset.eventId = event.id; // Уникальный маркер для фокуса
 
+        // Умная установка фокуса для названия
         if (focusId === event.id) {
             setTimeout(() => {
                 nameInput.focus();
-                // Если в поле уже есть текст, курсор уйдет в конец
-                const val = nameInput.value;
-                nameInput.value = '';
-                nameInput.value = val;
+                // Не сбрасываем курсор в конец, если пользователь печатает в середине
+                // (Браузер сам сохранит позицию, если мы просто вызовем focus())
             }, 0);
         }
 
         nameInput.oninput = (e) => {
+            const pos = e.target.selectionStart; // Запоминаем позицию курсора
             event.name = e.target.value;
             manageDates(event);
-            render(event.id);
+            render(event.id); // Перерисовываем, сохраняя фокус
+
+            // Восстанавливаем позицию курсора после рендера
+            const el = document.querySelector(`[data-event-id="${event.id}"]`);
+            if (el) el.setSelectionRange(pos, pos);
 
             saveLocal();
         };
-
-        nameInput.dataset.eventId = event.id; // Для удержания фокуса
 
         const datesList = document.createElement('div');
         datesList.className = 'dates-list';
@@ -112,7 +114,6 @@ function render() {
 
             topRow.appendChild(dInput);
 
-            // УСЛОВИЕ: Кнопка удаления только если блок НЕ пустой
             const isBlockEmpty = !dateObj.val && !dateObj.desc;
             if (!isBlockEmpty) {
                 const delDateBtn = document.createElement('button');
@@ -131,17 +132,27 @@ function render() {
             descInput.className = 'date-desc-input';
             descInput.placeholder = "Описание...";
             descInput.value = dateObj.desc;
-            descInput.dataset.id = dateObj.id;
+            descInput.dataset.descId = dateObj.id; // Маркер для фокуса описания
+
+            // Установка фокуса для описания
+            if (focusId === dateObj.id) {
+                setTimeout(() => descInput.focus(), 0);
+            }
 
             descInput.oninput = (e) => {
+                const pos = e.target.selectionStart;
                 dateObj.desc = e.target.value;
                 const oldLen = event.dates.length;
                 manageDates(event);
+
+                // Если количество блоков изменилось, рендерим всё
                 if (event.dates.length !== oldLen) {
-                    render();
-                    document.querySelector(`[data-id="${dateObj.id}"]`).focus();
+                    render(dateObj.id);
+                } else {
+                    // Если просто печатаем — сохраняем локально без полного рендера 
+                    // (чтобы flatpickr не переинициализировался на каждом символе)
+                    saveLocal();
                 }
-                saveLocal();
             };
 
             descInput.onblur = () => {
@@ -167,7 +178,6 @@ function render() {
             });
         });
 
-        // 3. Кнопки управления (только удаление события)
         const controls = document.createElement('div');
         controls.className = 'row-controls';
         const delEventBtn = document.createElement('button');
