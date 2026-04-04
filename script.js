@@ -24,7 +24,7 @@ function destroyAllFlatpickr() {
 
 // --- Фабрики данных ---
 function createEvent() {
-    return { id: Date.now(), name: '', dates: [], labelIds: [] };
+    return { id: Date.now(), name: '', dates: [], labelId: null };
 }
 
 // isDraft — явный флаг вместо магического префикса 'draft-' в ID
@@ -671,11 +671,11 @@ function renderLabelCell(event, row) {
     const cell = document.createElement('div');
     cell.className = 'label-cell';
 
-    const labelId = (event.labelIds || [])[0];
-    const label = state.labels.find(l => l.id === labelId);
+    // Прямое обращение к свойству labelId
+    const currentLabelId = event.labelId;
+    const label = state.labels.find(l => l.id === currentLabelId);
 
     if (label) {
-        // Если метка выбрана — показываем только бейдж
         const badge = document.createElement('span');
         badge.className = 'label-badge';
         badge.textContent = label.name;
@@ -684,40 +684,29 @@ function renderLabelCell(event, row) {
         badge.title = label.name;
         cell.appendChild(badge);
     } else {
-        // Если не выбрана — показываем иконку 🏷️
         const placeholder = document.createElement('span');
         placeholder.className = 'label-placeholder';
         placeholder.textContent = '🏷️';
         cell.appendChild(placeholder);
     }
 
-    // Клик по всей ячейке открывает меню
     cell.onclick = (e) => {
         e.stopPropagation();
 
-        // Закрываем другие открытые меню
         const existing = document.querySelector('.label-dropdown');
         if (existing) {
             const parent = existing.parentElement;
             existing.remove();
-            if (parent === cell) return; // Если кликнули по той же, просто закрываем
+            if (parent === cell) return;
         }
 
         const dropdown = document.createElement('div');
         dropdown.className = 'label-dropdown';
 
-        if (state.labels.length === 0) {
-            const item = document.createElement('div');
-            item.className = 'label-dropdown-item';
-            item.style.color = '#666';
-            item.textContent = 'Нет меток';
-            dropdown.appendChild(item);
-        }
-
         state.labels.forEach(l => {
             const item = document.createElement('div');
             item.className = 'label-dropdown-item';
-            if (l.id === labelId) item.classList.add('label-dropdown-item--checked');
+            if (l.id === currentLabelId) item.classList.add('label-dropdown-item--checked');
 
             item.innerHTML = `
                 <span class="label-dot" style="background:${l.color}"></span>
@@ -726,11 +715,11 @@ function renderLabelCell(event, row) {
 
             item.onclick = (e) => {
                 e.stopPropagation();
-                // Логика переключения (макс. 1 метка)
-                event.labelIds = (l.id === labelId) ? [] : [l.id];
+
+                // Логика переключения: если нажали на ту же — сбрасываем в null, иначе записываем ID
+                event.labelId = (l.id === currentLabelId) ? null : l.id;
 
                 dropdown.remove();
-                // Перерисовываем только эту ячейку
                 const newCell = renderLabelCell(event, row);
                 row.replaceChild(newCell, cell);
                 saveLocal();
