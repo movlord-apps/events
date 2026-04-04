@@ -3,7 +3,7 @@
     --row-bg: #1a1a1a;
     --text: #eee;
     --accent: #0078d4;
-    --danger: #d13438;
+    --danger: #3d1b1c;
     --border: #333;
     --input-bg: #252525;
 }
@@ -145,13 +145,26 @@ h1 {
 }
 
 /* Поле названия */
-.event-name-input {
+.name-container {
     width: 200px;
+    min-width: 200px;
     flex-shrink: 0;
+}
+
+.event-name-input {
+    width: 100%;
+    box-sizing: border-box;
     background: var(--input-bg);
     border: 1px solid var(--border);
     color: white;
     padding: 6px;
+    border-radius: 3px;
+    outline: none;
+    display: block;
+}
+
+.event-name-input:focus {
+    border-color: var(--accent);
 }
 
 /* Контейнер дат */

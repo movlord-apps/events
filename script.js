@@ -289,6 +289,9 @@ function render(focusId = null) {
         const row = document.createElement('div');
         row.className = 'event-row';
 
+        const nameContainer = document.createElement('div');
+        nameContainer.className = 'name-container';
+
         const nameInput = document.createElement('input');
         nameInput.className = 'event-name-input';
         nameInput.value = event.name;
