@@ -424,7 +424,7 @@ async function loadFromGist() {
             if (!event.labelIds) event.labelIds = [];
             syncDraftDate(event);
         });
-        render();
+        sortAll(true);
         document.getElementById('sync-status').innerText =
             'Данные загружены из Gist (' + new Date(remoteTs).toLocaleTimeString() + ')';
     } catch (e) {
@@ -433,6 +433,7 @@ async function loadFromGist() {
 }
 
 async function saveToGist() {
+    sortAll(true);
     const token = getToken();
     if (!token || !GIST_ID) { openSettings(); return; }
 
@@ -542,6 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Синхронизация при закрытии вкладки или уходе со страницы
     window.addEventListener('pagehide', () => {
+        sortAll(false);
         const token = getToken();
         // Проверяем наличие ключей и данных
         if (!isDirty || !token || !GIST_ID) return;
@@ -586,7 +588,7 @@ function firstRealDate(event) {
     return new Date(Math.min(...dates));
 }
 
-function sortAll() {
+function sortAll(shouldRender = true) {
     // 1. Сортируем даты внутри каждого события
     state.events.forEach(event => {
         const real = event.dates
@@ -613,7 +615,9 @@ function sortAll() {
         return da - db;
     });
 
-    render();
+    if (shouldRender) {
+        render();
+    }
     saveLocal();
 }
 
