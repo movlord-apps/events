@@ -1,10 +1,29 @@
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
 let GIST_ID = localStorage.getItem('gh_gist_id') || '';
+
+function getToken() { return GITHUB_TOKEN; }
+
+function setToken(token) {
+    GITHUB_TOKEN = token;
+    localStorage.setItem('gh_token', token);
+}
 const GIST_FILENAME = 'events.json';
 
 let state = {
     events: []
 };
+
+// --- Трекинг flatpickr-инстанций ---
+// Ключ: уникальный id даты → значение: инстанция flatpickr.
+// Перед каждым render() все старые инстанции уничтожаются.
+const flatpickrInstances = new Map();
+
+function destroyAllFlatpickr() {
+    flatpickrInstances.forEach(instance => {
+        try { instance.destroy(); } catch { }
+    });
+    flatpickrInstances.clear();
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     init();
@@ -16,15 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function init() {
-    // 1. Загрузка из LocalStorage
     const local = localStorage.getItem('event_app_data');
     if (local) {
         state = JSON.parse(local);
         render();
     }
 
-    // 2. Попытка загрузки из Gist
-    if (GITHUB_TOKEN && GIST_ID) {
+    if (getToken() && GIST_ID) {
         await loadFromGist();
     }
 }
@@ -34,33 +51,41 @@ function toggleModal(show) {
 }
 
 function openSettings() {
-    const input = document.getElementById('settings-input');
-    // Заполняем текущими данными из памяти
-    input.value = GITHUB_TOKEN && GIST_ID ? `${GITHUB_TOKEN}\n${GIST_ID}` : '';
+    const tokenInput = document.getElementById('settings-token');
+    const gistInput = document.getElementById('settings-gist');
+    tokenInput.value = ''; // Никогда не показываем токен обратно
+    gistInput.value = GIST_ID;
     toggleModal(true);
 }
 
 function saveSettings() {
-    const input = document.getElementById('settings-input').value.trim();
-    const lines = input.split('\n').map(l => l.trim());
+    const tokenInput = document.getElementById('settings-token').value.trim();
+    const gistInput = document.getElementById('settings-gist').value.trim();
 
-    if (lines.length >= 2) {
-        GITHUB_TOKEN = lines[0];
-        GIST_ID = lines[1];
+    if (!gistInput) {
+        alert('Введите Gist ID');
+        return;
+    }
 
-        localStorage.setItem('gh_token', GITHUB_TOKEN);
-        localStorage.setItem('gh_gist_id', GIST_ID);
+    // Если токен не введён — оставляем старый (пользователь мог менять только Gist ID)
+    if (tokenInput) {
+        setToken(tokenInput);
+    }
 
-        alert('Настройки сохранены');
-        toggleModal(false);
-        // Пробуем сразу загрузить данные, если ключи обновились
+    GIST_ID = gistInput;
+    localStorage.setItem('gh_gist_id', GIST_ID);
+
+    toggleModal(false);
+
+    if (getToken() && GIST_ID) {
         loadFromGist();
-    } else {
-        alert('Введите две строки: Токен и ID');
     }
 }
 
 function render(focusId = null) {
+    // Уничтожаем все старые инстанции flatpickr перед перерисовкой
+    destroyAllFlatpickr();
+
     const list = document.getElementById('events-list');
     list.innerHTML = '';
 
@@ -81,7 +106,6 @@ function render(focusId = null) {
         nameInput.oninput = (e) => {
             event.name = e.target.value;
             manageDates(event);
-            // Рендерим только если это первый символ (чтобы появился блок даты)
             if (event.name.length === 1 && event.dates.length === 1) {
                 render(event.id);
             }
@@ -89,9 +113,9 @@ function render(focusId = null) {
         };
 
         nameInput.onblur = () => {
-            event.name = event.name.trim(); // Обрезаем пробелы
-            manageEvents(); // Удаляем, если пустое
-            state.events.forEach(manageDates); // Обновляем черновики дат
+            event.name = event.name.trim();
+            manageEvents();
+            state.events.forEach(manageDates);
             render();
             saveLocal();
         };
@@ -141,7 +165,6 @@ function render(focusId = null) {
 
             descInput.oninput = (e) => {
                 dateObj.desc = e.target.value;
-                // Если начали писать в черновике — превращаем его в реальный блок
                 if (isDraft && dateObj.desc.trim() !== '') {
                     dateObj.id = Date.now();
                     manageDates(event);
@@ -151,9 +174,9 @@ function render(focusId = null) {
             };
 
             descInput.onblur = () => {
-                dateObj.desc = dateObj.desc.trim(); // Обрезаем пробелы
+                dateObj.desc = dateObj.desc.trim();
                 manageDates(event);
-                manageEvents(); // Проверяем, не стало ли всё событие пустым
+                manageEvents();
                 render();
                 saveLocal();
             };
@@ -162,7 +185,8 @@ function render(focusId = null) {
             dateItem.appendChild(descInput);
             datesList.appendChild(dateItem);
 
-            flatpickr(dInput, {
+            // Создаём инстанцию и сразу регистрируем её в Map
+            const fpInstance = flatpickr(dInput, {
                 locale: "ru",
                 dateFormat: "d.m.Y",
                 defaultDate: dateObj.val,
@@ -174,6 +198,9 @@ function render(focusId = null) {
                     saveLocal();
                 }
             });
+
+            // Ключ — строковый ID даты, гарантированно уникальный в рамках рендера
+            flatpickrInstances.set(String(dateObj.id), fpInstance);
         });
 
         const controls = document.createElement('div');
@@ -194,33 +221,31 @@ function render(focusId = null) {
         list.appendChild(row);
     });
 }
-// --- Функции данных ---
-function addEvent() {
-    const newId = Date.now(); // Генерируем уникальный ID
-    state.events.push({
-        id: newId,
-        name: '',
-        dates: []
-    });
 
-    render(newId); // Передаем ID в render для установки фокуса
+function addEvent() {
+    const newId = Date.now();
+    state.events.push({ id: newId, name: '', dates: [] });
+    render(newId);
     saveLocal();
 }
+
 function saveLocal() {
     localStorage.setItem('event_app_data', JSON.stringify(state));
-    document.getElementById('sync-status').innerText = 'Локально сохранено: ' + new Date().toLocaleTimeString();
+    document.getElementById('sync-status').innerText =
+        'Локально сохранено: ' + new Date().toLocaleTimeString();
 }
 
 async function loadFromGist() {
-    if (!GITHUB_TOKEN || !GIST_ID) return;
+    const token = getToken();
+    if (!token || !GIST_ID) return;
 
     try {
         const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-            headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+            headers: { 'Authorization': `token ${token}` }
         });
         if (!res.ok) return;
         const data = await res.json();
-        const content = data.files[GIST_FILENAME].content;
+        const content = data.files[GIST_FILENAME]?.content;
         if (content) {
             state = JSON.parse(content);
             render();
@@ -232,8 +257,9 @@ async function loadFromGist() {
 }
 
 async function saveToGist() {
-    if (!GITHUB_TOKEN || !GIST_ID) {
-        openSettings(); // Если ключей нет, открываем настройки
+    const token = getToken();
+    if (!token || !GIST_ID) {
+        openSettings();
         return;
     }
 
@@ -244,7 +270,7 @@ async function saveToGist() {
         const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
             method: 'PATCH',
             headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Authorization': `token ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -266,7 +292,6 @@ async function saveToGist() {
 function manageEvents() {
     state.events = state.events.filter(e => {
         const hasName = e.name.trim() !== '';
-        // Проверяем, есть ли хоть одна заполненная дата (игнорируя черновики)
         const hasRealDates = e.dates.some(d =>
             (d.val.trim() !== '' || d.desc.trim() !== '') && !String(d.id).startsWith('draft')
         );
@@ -274,14 +299,8 @@ function manageEvents() {
     });
 }
 
-/**
- * Логика авто-добавления и удаления пустых блоков
- */
 function manageDates(event) {
-    // 1. Оставляем только заполненные даты
     const filledDates = event.dates.filter(d => d.val.trim() !== '' || d.desc.trim() !== '');
-
-    // 2. Если у события есть название (даже не обрезанное пока), добавляем один пустой черновик
     if (event.name.length > 0) {
         event.dates = [...filledDates, { id: 'draft-' + event.id, val: '', desc: '' }];
     } else {

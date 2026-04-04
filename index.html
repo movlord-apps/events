@@ -6,11 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Tracker</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Стили flatpickr и темная тема -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-
-    <!-- Скрипты -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
 </head>
@@ -25,26 +22,38 @@
             </div>
         </header>
 
-        <div id="events-list" class="events-list">
-            <!-- Строки событий -->
-        </div>
+        <div id="events-list" class="events-list"></div>
 
         <div class="status-bar">
             <span id="sync-status">Локальное хранилище</span>
             <button id="sync-btn" class="btn btn-small">Синхронизировать с Gist</button>
         </div>
     </div>
+
     <div id="settings-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <h3>Настройки GitHub Gist</h3>
-            <p>Введите Token (1-я строка) и Gist ID (2-я строка):</p>
-            <textarea id="settings-input" placeholder="ghp_xxx...&#10;1afd0be..."></textarea>
+
+            <label class="settings-label">
+                GitHub Token
+                <span class="settings-hint">Хранится в sessionStorage (сбрасывается при закрытии вкладки)</span>
+            </label>
+            <input id="settings-token" type="password" class="settings-field" placeholder="ghp_xxxxxxxxxxxx"
+                autocomplete="off" />
+
+            <label class="settings-label" style="margin-top: 14px;">
+                Gist ID
+                <span class="settings-hint">Хранится в localStorage</span>
+            </label>
+            <input id="settings-gist" type="text" class="settings-field" placeholder="1afd0be..." autocomplete="off" />
+
             <div class="modal-actions">
                 <button id="settings-cancel" class="btn">Отмена</button>
                 <button id="settings-save" class="btn btn-primary">ОК</button>
             </div>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 
