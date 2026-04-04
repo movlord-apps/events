@@ -390,6 +390,7 @@ h1 {
 /* Стилизация Color Picker */
 .label-color-picker {
     -webkit-appearance: none;
+    appearance: none;
     border: none;
     width: 18px;
     height: 18px;
