@@ -1,7 +1,5 @@
-// Настройки (заполните при необходимости)
-const GITHUB_TOKEN = '';
-const GIST_ID = '';
-const GIST_FILENAME = 'events_data.json';
+const STORAGE_KEY = 'events_app_data';
+localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
 let state = {
     events: []
@@ -50,11 +48,14 @@ function render() {
             const dateItem = document.createElement('div');
             dateItem.className = 'date-item';
 
-            // Создаем текстовое поле для flatpickr
+            // 1. Верхняя часть: Дата + Удалить
+            const topRow = document.createElement('div');
+            topRow.className = 'date-top-row';
+
             const dInput = document.createElement('input');
             dInput.type = 'text';
-            dInput.value = dateObj.val;
-            dInput.placeholder = "Выбрать дату...";
+            dInput.placeholder = "Дата...";
+            dInput.value = dateObj.val || '';
 
             const delDateBtn = document.createElement('button');
             delDateBtn.className = 'btn btn-danger btn-small';
@@ -65,16 +66,29 @@ function render() {
                 saveLocal();
             };
 
-            dateItem.appendChild(dInput);
-            dateItem.appendChild(delDateBtn);
+            topRow.appendChild(dInput);
+            topRow.appendChild(delDateBtn);
+
+            // 2. Нижняя часть: Описание
+            const descInput = document.createElement('input');
+            descInput.type = 'text';
+            descInput.className = 'date-desc-input';
+            descInput.placeholder = "Описание (напр. Дедлайн)";
+            descInput.value = dateObj.desc || ''; // Используем поле desc из объекта
+            descInput.oninput = (e) => {
+                dateObj.desc = e.target.value;
+                saveLocal();
+            };
+
+            dateItem.appendChild(topRow);
+            dateItem.appendChild(descInput);
             datesList.appendChild(dateItem);
 
-            // Инициализация flatpickr после добавления в DOM
+            // Инициализация flatpickr
             flatpickr(dInput, {
                 locale: "ru",
-                dateFormat: "d.m.Y", // Привычный формат: 15.05.2024
+                dateFormat: "d.m.Y",
                 defaultDate: dateObj.val,
-                disableMobile: true, // Чтобы на десктопе всегда был кастомный календарь
                 onChange: (selectedDates, dateStr) => {
                     dateObj.val = dateStr;
                     saveLocal();
@@ -90,7 +104,11 @@ function render() {
         addDateBtn.className = 'btn btn-primary btn-small';
         addDateBtn.innerText = '+ Дата';
         addDateBtn.onclick = () => {
-            event.dates.push({ id: Date.now(), val: '' });
+            event.dates.push({
+                id: Date.now(),
+                val: '',
+                desc: '' // Добавляем поддержку описания
+            });
             render();
             saveLocal();
         };

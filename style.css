@@ -95,24 +95,44 @@ h1 {
 
 .date-item {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    /* Стек: дата сверху, описание снизу */
     width: 200px;
     min-width: 200px;
-    background: #2a2a2a;
+    background: #222;
     border: 1px solid #444;
-    border-radius: 3px;
-    padding: 0 5px;
+    border-radius: 4px;
+    padding: 6px;
+    gap: 6px;
+}
+
+/* Верхняя строка: инпут даты и кнопка удаления */
+.date-top-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .date-item input {
-    background: transparent;
-    border: none;
+    background: #2a2a2a;
+    border: 1px solid #333;
     color: white;
-    width: 100%;
-    padding: 6px;
-    font-family: inherit;
+    padding: 4px 6px;
+    font-size: 13px;
+    border-radius: 2px;
     outline: none;
-    /* Убираем стандартный фокус */
+}
+
+/* Поле описания (нижнее) */
+.date-desc-input {
+    width: calc(100% - 12px);
+    /* Учитываем внутренние отступы */
+    font-size: 11px !important;
+    color: #aaa !important;
+}
+
+.date-item input:focus {
+    border-color: var(--accent);
 }
 
 /* Стилизация самого календаря flatpickr под наш интерфейс */
