@@ -526,6 +526,24 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('settings-cancel').onclick = () => toggleModal(false);
 
     document.addEventListener('click', () => closeAllLabelDropdowns());
+
+    const labelsBtn = document.getElementById('labels-mgmt-btn');
+    if (labelsBtn) {
+        labelsBtn.onclick = toggleLabelsMenu;
+    }
+
+    // Закрытие меню при клике вне его
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('labels-mgmt-dropdown');
+        const btn = document.getElementById('labels-mgmt-btn');
+
+        // Закрываем, только если клик НЕ по кнопке открытия И НЕ внутри самого меню
+        if (dropdown && dropdown.style.display === 'flex') {
+            if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        }
+    });
 });
 
 // --- Сортировка ---
@@ -686,26 +704,3 @@ function renderLabelsMgmt() {
     newRow.appendChild(addBtn);
     container.appendChild(newRow);
 }
-
-// --- Инициализация ---
-document.addEventListener('DOMContentLoaded', () => {
-    // ... существующий код ...
-
-    const labelsBtn = document.getElementById('labels-mgmt-btn');
-    if (labelsBtn) {
-        labelsBtn.onclick = toggleLabelsMenu;
-    }
-
-    // Закрытие меню при клике вне его
-    document.addEventListener('click', (e) => {
-        const dropdown = document.getElementById('labels-mgmt-dropdown');
-        const btn = document.getElementById('labels-mgmt-btn');
-
-        // Закрываем, только если клик НЕ по кнопке открытия И НЕ внутри самого меню
-        if (dropdown && dropdown.style.display === 'flex') {
-            if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
-                dropdown.style.display = 'none';
-            }
-        }
-    });
-});
