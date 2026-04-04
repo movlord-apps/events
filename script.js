@@ -72,9 +72,17 @@ function render() {
         const nameInput = document.createElement('input');
         nameInput.className = 'event-name-input';
         nameInput.value = event.name;
-        nameInput.oninput = (e) => { event.name = e.target.value; saveLocal(); };
+        nameInput.placeholder = "Название события...";
+        nameInput.oninput = (e) => {
+            event.name = e.target.value;
+            manageDates(event); // Проверяем, нужно ли создать первый блок даты
+            render();
+            // Возвращаем фокус, так как render его сбросит
+            document.querySelector(`[data-event-id="${event.id}"]`).focus();
+            saveLocal();
+        };
+        nameInput.dataset.eventId = event.id; // Для удержания фокуса
 
-        // 2. Контейнер дат
         const datesList = document.createElement('div');
         datesList.className = 'dates-list';
 
@@ -90,46 +98,45 @@ function render() {
             dInput.placeholder = "Дата...";
             dInput.value = dateObj.val;
 
-            const delDateBtn = document.createElement('button');
-            delDateBtn.className = 'btn btn-danger btn-small';
-            delDateBtn.innerText = '✕';
-            delDateBtn.onclick = () => {
-                event.dates = event.dates.filter(d => d.id !== dateObj.id);
-                if (event.dates.length === 0) event.dates.push({ id: Date.now(), val: '', desc: '' });
-                render();
-                saveLocal();
-            };
-
             topRow.appendChild(dInput);
-            topRow.appendChild(delDateBtn);
+
+            // УСЛОВИЕ: Кнопка удаления только если блок НЕ пустой
+            const isBlockEmpty = !dateObj.val && !dateObj.desc;
+            if (!isBlockEmpty) {
+                const delDateBtn = document.createElement('button');
+                delDateBtn.className = 'btn btn-danger btn-small';
+                delDateBtn.innerText = '✕';
+                delDateBtn.onclick = () => {
+                    event.dates = event.dates.filter(d => d.id !== dateObj.id);
+                    manageDates(event);
+                    render();
+                    saveLocal();
+                };
+                topRow.appendChild(delDateBtn);
+            }
 
             const descInput = document.createElement('input');
             descInput.className = 'date-desc-input';
             descInput.placeholder = "Описание...";
             descInput.value = dateObj.desc;
+            descInput.dataset.id = dateObj.id;
 
-            // ЛОГИКА АВТОМАТИКИ
             descInput.oninput = (e) => {
                 dateObj.desc = e.target.value;
-                // Если это был последний блок и его начали заполнять — добавим новый
-                if (index === event.dates.length - 1 && dateObj.desc) {
-                    manageDates(event);
+                const oldLen = event.dates.length;
+                manageDates(event);
+                if (event.dates.length !== oldLen) {
                     render();
-                    // Возвращаем фокус в текущее поле, так как render его сбросил
                     document.querySelector(`[data-id="${dateObj.id}"]`).focus();
                 }
                 saveLocal();
             };
 
             descInput.onblur = () => {
-                // При выходе из поля проверяем, не стало ли оно пустым (кроме последнего)
                 const oldLen = event.dates.length;
                 manageDates(event);
                 if (event.dates.length !== oldLen) render();
             };
-
-            // Чтобы найти инпут после перерисовки
-            descInput.dataset.id = dateObj.id;
 
             dateItem.appendChild(topRow);
             dateItem.appendChild(descInput);
@@ -171,12 +178,11 @@ function render() {
 // --- Функции данных ---
 
 function addEvent() {
-    const newEvent = {
+    state.events.push({
         id: Date.now(),
         name: '',
-        dates: [{ id: Date.now() + 1, val: '', desc: '' }]
-    };
-    state.events.push(newEvent);
+        dates: [] // Изначально дат нет
+    });
     render();
     saveLocal();
 }
@@ -242,16 +248,27 @@ async function saveToGist() {
  * Логика авто-добавления и удаления пустых блоков
  */
 function manageDates(event) {
-    // 1. Удаляем все абсолютно пустые блоки, кроме последнего
+    // Если имя события пустое — удаляем все даты
+    if (!event.name.trim()) {
+        event.dates = [];
+        return;
+    }
+
+    // Если имя есть, но дат нет вообще — добавляем первую пустую
+    if (event.dates.length === 0) {
+        event.dates.push({ id: Date.now(), val: '', desc: '' });
+    }
+
+    // Удаляем все абсолютно пустые блоки, кроме последнего
     const lastIndex = event.dates.length - 1;
     event.dates = event.dates.filter((d, index) => {
         const isEmpty = !d.val && !d.desc;
         return !isEmpty || index === lastIndex;
     });
 
-    // 2. Если последний блок заполнили (хотя бы одно поле), добавляем новый пустой
+    // Если последний блок заполнили — добавляем новый пустой в конец
     const last = event.dates[event.dates.length - 1];
     if (last && (last.val || last.desc)) {
-        event.dates.push({ id: Date.now(), val: '', desc: '' });
+        event.dates.push({ id: Date.now() + 1, val: '', desc: '' });
     }
 }

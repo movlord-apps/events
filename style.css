@@ -178,6 +178,15 @@ h1 {
     gap: 4px;
 }
 
+.date-top-row input {
+    flex-grow: 1;
+    width: 100%;
+}
+
+.date-top-row .btn-danger {
+    flex-shrink: 0;
+}
+
 .date-item input {
     background: #2a2a2a;
     border: 1px solid #333;
