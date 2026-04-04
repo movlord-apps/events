@@ -153,7 +153,6 @@ function buildDateItem(event, dateObj, datesList) {
         locale: 'ru',
         dateFormat: 'd.m.Y',
         defaultDate: dateObj.val || null,
-        allowInput: true,
         onChange: (_, dateStr) => {
             dateObj.val = dateStr;
             if (dateObj.isDraft) promoteDraft(dateObj);
@@ -176,108 +175,6 @@ function createLabel(name) {
     return { id: `label-${Date.now()}`, name, color: DEFAULT_LABEL_COLOR };
 }
 
-// Закрыть все открытые дропдауны меток
-function closeAllLabelDropdowns() {
-    document.querySelectorAll('.label-dropdown').forEach(d => d.remove());
-}
-
-// Pill-бейджи выбранных меток на строке события
-function buildLabelBadges(event) {
-    const wrap = document.createElement('div');
-    wrap.className = 'label-badges';
-
-    // Берем только первую метку из массива (теперь это категория)
-    const labelId = (event.labelIds || [])[0];
-    const label = state.labels.find(l => l.id === labelId);
-
-    if (label) {
-        const badge = document.createElement('span');
-        badge.className = 'label-badge';
-        badge.textContent = label.name;
-        badge.style.background = label.color;
-        badge.style.color = '#ccc';
-        badge.title = label.name; // Подсказка при наведении, если текст обрезан
-        wrap.appendChild(badge);
-    }
-
-    return wrap;
-}
-
-// Кнопка + выпадающее меню меток (только выбор существующих)
-function buildLabelButton(event, row) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-secondary btn-small label-btn';
-    btn.title = 'Метки';
-    btn.textContent = '🏷️';
-
-    btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-
-        const existing = row.querySelector('.label-dropdown');
-        closeAllLabelDropdowns();
-        if (existing) return;
-
-        const dropdown = document.createElement('div');
-        dropdown.className = 'label-dropdown';
-
-        // Если меток вообще нет, можно вывести подсказку
-        if (state.labels.length === 0) {
-            const emptyMsg = document.createElement('div');
-            emptyMsg.className = 'label-dropdown-item';
-            emptyMsg.style.color = '#666';
-            emptyMsg.textContent = 'Нет созданных меток';
-            dropdown.appendChild(emptyMsg);
-        }
-
-        // Только существующие метки
-        state.labels.forEach(label => {
-            const item = document.createElement('div');
-            item.className = 'label-dropdown-item';
-
-            const checked = (event.labelIds || []).includes(label.id);
-            if (checked) item.classList.add('label-dropdown-item--checked');
-
-            const dot = document.createElement('span');
-            dot.className = 'label-dot';
-            dot.style.background = label.color;
-
-            const name = document.createElement('span');
-            name.textContent = label.name;
-
-            item.appendChild(dot);
-            item.appendChild(name);
-
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-
-                if (!event.labelIds) event.labelIds = [];
-
-                if (checked) {
-                    // Если кликнули по уже выбранной — снимаем выделение
-                    event.labelIds = [];
-                } else {
-                    // Если кликнули по новой — заменяем старую (эксклюзивный выбор)
-                    event.labelIds = [label.id];
-                }
-
-                closeAllLabelDropdowns();
-
-                // Обновляем бейджи в строке
-                const badges = row.querySelector('.label-badges');
-                const newBadges = buildLabelBadges(event);
-                row.replaceChild(newBadges, badges);
-                saveLocal();
-            });
-
-            dropdown.appendChild(item);
-        });
-
-        btn.parentElement.style.position = 'relative';
-        btn.parentElement.appendChild(dropdown);
-    });
-
-    return btn;
-}
 
 // --- Основной рендер ---
 
@@ -423,7 +320,8 @@ async function loadFromGist() {
         isDirty = false;
         if (!state.labels) state.labels = [];
         state.events.forEach(event => {
-            if (!event.labelIds) event.labelIds = [];
+            if (!('labelId' in event)) event.labelId = event.labelIds?.[0] ?? null;
+            delete event.labelIds;
             syncDraftDate(event);
         });
         sortAll(true);
@@ -505,7 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
         state = JSON.parse(local);
         if (!state.labels) state.labels = [];
         state.events.forEach(event => {
-            if (!event.labelIds) event.labelIds = [];
+            if (!('labelId' in event)) event.labelId = event.labelIds?.[0] ?? null;
+            delete event.labelIds;
             syncDraftDate(event);
         });
         render();
@@ -520,7 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('settings-save').onclick = saveSettings;
     document.getElementById('settings-cancel').onclick = () => toggleModal(false);
 
-    document.addEventListener('click', () => closeAllLabelDropdowns());
 
     const labelsBtn = document.getElementById('labels-mgmt-btn');
     if (labelsBtn) {
@@ -685,7 +583,7 @@ function renderLabelsMgmt() {
             e.stopPropagation(); // Важно: не закрывать меню
             state.labels = state.labels.filter(l => l.id !== label.id);
             state.events.forEach(ev => {
-                if (ev.labelIds) ev.labelIds = ev.labelIds.filter(id => id !== label.id);
+                if (ev.labelId === label.id) ev.labelId = null;
             });
             saveLocal();
             renderLabelsMgmt(); // Перерисовываем только содержимое
@@ -809,7 +707,8 @@ function processLoadedData(data) {
     if (!state.labels) state.labels = [];
 
     state.events.forEach(event => {
-        if (!event.labelId) event.labelId = null; // Переход на одиночное поле
+        if (!('labelId' in event)) event.labelId = event.labelIds?.[0] ?? null;
+        delete event.labelIds;
 
         // Помечаем все загруженные даты как реальные
         event.dates.forEach(d => {
