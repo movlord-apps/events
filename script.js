@@ -1,7 +1,7 @@
-// Настройки синхронизации
+// Настройки (заполните при необходимости)
 const GITHUB_TOKEN = '';
 const GIST_ID = '';
-const GIST_FILENAME = 'events_simple.json';
+const GIST_FILENAME = 'events_data.json';
 
 let state = {
     events: []
@@ -14,14 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function init() {
-    // Загрузка из локального хранилища для мгновенного отклика
-    const local = localStorage.getItem('events_data');
+    // 1. Загрузка из LocalStorage
+    const local = localStorage.getItem('event_app_data');
     if (local) {
         state = JSON.parse(local);
         render();
     }
 
-    // Если есть токены, пробуем обновить из Gist
+    // 2. Попытка загрузки из Gist
     if (GITHUB_TOKEN && GIST_ID) {
         await loadFromGist();
     }
@@ -35,68 +35,76 @@ function render() {
         const row = document.createElement('div');
         row.className = 'event-row';
 
-        // Левая часть: Название и управление событием
-        const mainInfo = document.createElement('div');
-        mainInfo.className = 'event-main';
-        mainInfo.innerHTML = `
-            <input type="text" class="event-name-input" value="${event.name}" placeholder="Название события...">
-            <button class="btn btn-primary btn-small add-date-btn" title="Добавить дату">+</button>
-            <button class="btn btn-danger btn-small del-event-btn" title="Удалить событие">✕</button>
-        `;
+        // 1. Название события
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'event-name-input';
+        nameInput.value = event.name;
+        nameInput.placeholder = 'Название события...';
+        nameInput.oninput = (e) => { event.name = e.target.value; saveLocal(); };
 
-        // Правая часть: Список дат
-        const datesCont = document.createElement('div');
-        datesCont.className = 'dates-container';
+        // 2. Контейнер дат
+        const datesList = document.createElement('div');
+        datesList.className = 'dates-list';
 
         event.dates.forEach(dateObj => {
             const dateItem = document.createElement('div');
             dateItem.className = 'date-item';
-            dateItem.innerHTML = `
-                <input type="date" value="${dateObj.val}">
-                <button class="btn btn-danger btn-small del-date-btn">✕</button>
-            `;
 
-            // Логика изменения даты
-            dateItem.querySelector('input').onchange = (e) => {
-                dateObj.val = e.target.value;
-                saveLocal();
-            };
+            const dInput = document.createElement('input');
+            dInput.type = 'date';
+            dInput.value = dateObj.val;
+            dInput.onchange = (e) => { dateObj.val = e.target.value; saveLocal(); };
 
-            // Удаление даты
-            dateItem.querySelector('.del-date-btn').onclick = () => {
+            const delDateBtn = document.createElement('button');
+            delDateBtn.className = 'btn btn-danger btn-small';
+            delDateBtn.innerText = '✕';
+            delDateBtn.onclick = () => {
                 event.dates = event.dates.filter(d => d.id !== dateObj.id);
                 render();
                 saveLocal();
             };
 
-            datesCont.appendChild(dateItem);
+            dateItem.appendChild(dInput);
+            dateItem.appendChild(delDateBtn);
+            datesList.appendChild(dateItem);
         });
 
-        // Слушатели для основной части
-        mainInfo.querySelector('.event-name-input').oninput = (e) => {
-            event.name = e.target.value;
-            saveLocal();
-        };
+        // 3. Кнопки управления (справа от всех дат)
+        const controls = document.createElement('div');
+        controls.className = 'row-controls';
 
-        mainInfo.querySelector('.add-date-btn').onclick = () => {
+        const addDateBtn = document.createElement('button');
+        addDateBtn.className = 'btn btn-primary btn-small';
+        addDateBtn.innerText = '+ Дата';
+        addDateBtn.onclick = () => {
             event.dates.push({ id: Date.now(), val: '' });
             render();
             saveLocal();
         };
 
-        mainInfo.querySelector('.del-event-btn').onclick = () => {
+        const delEventBtn = document.createElement('button');
+        delEventBtn.className = 'btn btn-danger btn-small';
+        delEventBtn.innerText = 'Удалить событие';
+        delEventBtn.onclick = () => {
             state.events = state.events.filter(e => e.id !== event.id);
             render();
             saveLocal();
         };
 
-        row.appendChild(mainInfo);
-        row.appendChild(datesCont);
+        controls.appendChild(addDateBtn);
+        controls.appendChild(delEventBtn);
+
+        // Сборка строки
+        row.appendChild(nameInput);
+        row.appendChild(datesList);
+        row.appendChild(controls);
+
         list.appendChild(row);
     });
 }
 
-// --- Data Management ---
+// --- Функции данных ---
 
 function addEvent() {
     state.events.push({
@@ -109,38 +117,50 @@ function addEvent() {
 }
 
 function saveLocal() {
-    localStorage.setItem('events_data', JSON.stringify(state));
+    localStorage.setItem('event_app_data', JSON.stringify(state));
     document.getElementById('sync-status').innerText = 'Локально сохранено: ' + new Date().toLocaleTimeString();
 }
 
 async function loadFromGist() {
     try {
         const res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
+        if (!res.ok) return;
         const data = await res.json();
-        state = JSON.parse(data.files[GIST_FILENAME].content);
+        const content = data.files[GIST_FILENAME].content;
+        state = JSON.parse(content);
         render();
-        document.getElementById('sync-status').innerText = 'Данные загружены из Gist';
+        document.getElementById('sync-status').innerText = 'Данные синхронизированы с Gist';
     } catch (e) {
-        console.log('Gist load failed, using local data');
+        console.error('Ошибка Gist:', e);
     }
 }
 
 async function saveToGist() {
-    if (!GITHUB_TOKEN || !GIST_ID) return alert('Укажите GITHUB_TOKEN и GIST_ID');
+    if (!GITHUB_TOKEN || !GIST_ID) {
+        alert('Заполните GITHUB_TOKEN и GIST_ID в script.js');
+        return;
+    }
 
     const status = document.getElementById('sync-status');
     status.innerText = 'Синхронизация...';
 
     try {
-        await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
             method: 'PATCH',
-            headers: { 'Authorization': `token ${GITHUB_TOKEN}` },
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
                 files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } }
             })
         });
-        status.innerText = 'Синхронизировано с Gist';
+        if (res.ok) {
+            status.innerText = 'Успешно сохранено в Gist';
+        } else {
+            status.innerText = 'Ошибка API';
+        }
     } catch (e) {
-        status.innerText = 'Ошибка Gist';
+        status.innerText = 'Ошибка сети';
     }
 }
