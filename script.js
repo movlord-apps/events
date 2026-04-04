@@ -73,14 +73,24 @@ function render() {
         nameInput.className = 'event-name-input';
         nameInput.value = event.name;
         nameInput.placeholder = "Название события...";
+        nameInput.dataset.eventId = event.id; // Для поиска элемента после рендера
+
         nameInput.oninput = (e) => {
             event.name = e.target.value;
-            manageDates(event); // Проверяем, нужно ли создать первый блок даты
+            manageDates(event);
             render();
-            // Возвращаем фокус, так как render его сбросит
-            document.querySelector(`[data-event-id="${event.id}"]`).focus();
+
+            // Возвращаем фокус в поле названия и ставим курсор в конец
+            const el = document.querySelector(`[data-event-id="${event.id}"]`);
+            if (el) {
+                el.focus();
+                const val = el.value;
+                el.value = ''; // Трюк для перемещения курсора в конец
+                el.value = val;
+            }
             saveLocal();
         };
+
         nameInput.dataset.eventId = event.id; // Для удержания фокуса
 
         const datesList = document.createElement('div');
@@ -248,25 +258,26 @@ async function saveToGist() {
  * Логика авто-добавления и удаления пустых блоков
  */
 function manageDates(event) {
-    // Если имя события пустое — удаляем все даты
-    if (!event.name.trim()) {
-        event.dates = [];
+    const hasName = event.name.trim().length > 0;
+
+    // Если имени нет и дат нет — ничего не делаем
+    if (!hasName && event.dates.length === 0) return;
+
+    // Если имя ввели впервые (дат еще 0) — создаем первый пустой блок
+    if (hasName && event.dates.length === 0) {
+        event.dates.push({ id: Date.now(), val: '', desc: '' });
         return;
     }
 
-    // Если имя есть, но дат нет вообще — добавляем первую пустую
-    if (event.dates.length === 0) {
-        event.dates.push({ id: Date.now(), val: '', desc: '' });
-    }
-
-    // Удаляем все абсолютно пустые блоки, кроме последнего
+    // Стандартная очистка: удаляем пустые блоки, кроме последнего
     const lastIndex = event.dates.length - 1;
     event.dates = event.dates.filter((d, index) => {
-        const isEmpty = !d.val && !d.desc;
-        return !isEmpty || index === lastIndex;
+        const isFilled = d.val || d.desc;
+        // Оставляем блок, если он заполнен ИЛИ если он последний в списке
+        return isFilled || index === lastIndex;
     });
 
-    // Если последний блок заполнили — добавляем новый пустой в конец
+    // Если последний блок в списке заполнили — добавляем новый пустой "черновик"
     const last = event.dates[event.dates.length - 1];
     if (last && (last.val || last.desc)) {
         event.dates.push({ id: Date.now() + 1, val: '', desc: '' });
