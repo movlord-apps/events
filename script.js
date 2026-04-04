@@ -35,15 +35,14 @@ function render() {
         const row = document.createElement('div');
         row.className = 'event-row';
 
-        // 1. Название события
+        // 1. Поле названия (300px)
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
         nameInput.className = 'event-name-input';
         nameInput.value = event.name;
-        nameInput.placeholder = 'Название события...';
         nameInput.oninput = (e) => { event.name = e.target.value; saveLocal(); };
 
-        // 2. Контейнер дат
+        // 2. Контейнер для дат (каждая по 200px)
         const datesList = document.createElement('div');
         datesList.className = 'dates-list';
 
@@ -70,7 +69,7 @@ function render() {
             datesList.appendChild(dateItem);
         });
 
-        // 3. Кнопки управления (справа от всех дат)
+        // 3. Блок кнопок управления (справа от всех дат)
         const controls = document.createElement('div');
         controls.className = 'row-controls';
 
@@ -95,7 +94,7 @@ function render() {
         controls.appendChild(addDateBtn);
         controls.appendChild(delEventBtn);
 
-        // Сборка строки
+        // Собираем строку: Название -> Даты -> Кнопки
         row.appendChild(nameInput);
         row.appendChild(datesList);
         row.appendChild(controls);
