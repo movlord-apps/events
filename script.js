@@ -282,7 +282,8 @@ function buildLabelButton(event, row) {
 
 function render(focusId = null) {
     destroyAllFlatpickr();
-
+    const h1 = document.querySelector('header h1');
+    if (h1) h1.textContent = getGlobalCountdownText();
     const list = document.getElementById('events-list');
     list.innerHTML = '';
 
@@ -815,25 +816,43 @@ function processLoadedData(data) {
     render();
 }
 
-function getCountdownText(event) {
-    const firstDate = firstRealDate(event);
-    if (!firstDate) return "-";
+// Базовая функция форматирования разницы во времени
+function formatCountdown(targetDate) {
+    if (!targetDate) return "-";
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const target = new Date(firstDate);
+    const target = new Date(targetDate);
     target.setHours(0, 0, 0, 0);
 
     const diffTime = target - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) return "наступило";
-    if (diffDays === 0) return "сегодня"; // Добавим для точности
+    if (diffDays === 0) return "сегодня";
     if (diffDays > 365) return "> 1 года";
     if (diffDays > 30) {
         const months = Math.floor(diffDays / 30);
         return `> ${months} мес.`;
     }
     return `${diffDays} дн.`;
+}
+
+// Счетчик для конкретного события (используется в строке)
+function getCountdownText(event) {
+    return formatCountdown(firstRealDate(event));
+}
+
+// Счетчик для заголовка (ищет самую раннюю дату среди всех событий)
+function getGlobalCountdownText() {
+    const allDates = state.events
+        .map(e => firstRealDate(e))
+        .filter(Boolean); // Убираем null (события без дат)
+
+    if (allDates.length === 0) return "События";
+
+    // Находим минимальную дату из всех существующих
+    const minDate = new Date(Math.min(...allDates));
+    return formatCountdown(minDate);
 }

@@ -31,6 +31,13 @@ header {
     gap: 20px;
 }
 
+header h1 {
+    font-weight: 300;
+    margin: 0;
+    color: var(--accent);
+    min-width: 150px;
+}
+
 .header-controls {
     display: flex;
     gap: 10px;
