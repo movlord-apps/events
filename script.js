@@ -82,145 +82,215 @@ function saveSettings() {
     }
 }
 
-function render(focusId = null) {
-    // Уничтожаем все старые инстанции flatpickr перед перерисовкой
-    destroyAllFlatpickr();
+// Точечно добавляет один черновой блок даты в существующий datesList,
+// не трогая остальной DOM. Вызывается из oninput вместо render().
+function appendDraftDate(event, datesList) {
+    const draft = event.dates[event.dates.length - 1];
+    if (!draft || !String(draft.id).startsWith('draft')) return;
+    // Если черновик уже есть в DOM — не дублируем
+    if (datesList.querySelector(`[data-desc-id="${draft.id}"]`)) return;
 
-    const list = document.getElementById('events-list');
-    list.innerHTML = '';
+    const dateItem = document.createElement('div');
+    dateItem.className = 'date-item';
 
-    state.events.forEach(event => {
-        const row = document.createElement('div');
-        row.className = 'event-row';
+    const topRow = document.createElement('div');
+    topRow.className = 'date-top-row';
 
-        const nameInput = document.createElement('input');
-        nameInput.className = 'event-name-input';
-        nameInput.value = event.name;
-        nameInput.placeholder = "Название события...";
-        nameInput.dataset.eventId = event.id;
+    const dInput = document.createElement('input');
+    dInput.type = 'text';
+    dInput.placeholder = "Дата...";
+    dInput.value = '';
+    topRow.appendChild(dInput);
 
-        if (focusId === event.id) {
-            setTimeout(() => nameInput.focus(), 0);
-        }
+    const descInput = document.createElement('input');
+    descInput.className = 'date-desc-input';
+    descInput.placeholder = "Описание...";
+    descInput.value = '';
+    descInput.dataset.descId = draft.id;
 
-        nameInput.oninput = (e) => {
-            event.name = e.target.value;
+    descInput.oninput = (e) => {
+        draft.desc = e.target.value;
+        if (draft.desc.trim() !== '') {
+            draft.id = Date.now();
             manageDates(event);
-            if (event.name.length === 1 && event.dates.length === 1) {
-                render(event.id);
-            }
-            saveLocal();
-        };
+            appendDraftDate(event, datesList);
+            dateItem.style.borderStyle = 'solid';
+            dateItem.style.opacity = '1';
+        }
+        saveLocal();
+    };
 
-        nameInput.onblur = () => {
-            event.name = event.name.trim();
-            manageEvents();
-            state.events.forEach(manageDates);
+    descInput.onblur = () => {
+        draft.desc = draft.desc.trim();
+        manageDates(event);
+        manageEvents();
+        render();
+        saveLocal();
+    };
+
+    dateItem.appendChild(topRow);
+    dateItem.appendChild(descInput);
+    datesList.appendChild(dateItem);
+
+    const fpInstance = flatpickr(dInput, {
+        locale: "ru",
+        dateFormat: "d.m.Y",
+        onChange: (selectedDates, dateStr) => {
+            draft.val = dateStr;
+            draft.id = Date.now();
+            manageDates(event);
             render();
             saveLocal();
-        };
+        }
+    });
+    flatpickrInstances.set(String(draft.id), fpInstance);
+}
 
-        const datesList = document.createElement('div');
-        datesList.className = 'dates-list';
 
-        event.dates.forEach((dateObj) => {
-            const dateItem = document.createElement('div');
-            dateItem.className = 'date-item';
+// Уничтожаем все старые инстанции flatpickr перед перерисовкой
+destroyAllFlatpickr();
 
-            const topRow = document.createElement('div');
-            topRow.className = 'date-top-row';
+const list = document.getElementById('events-list');
+list.innerHTML = '';
 
-            const dInput = document.createElement('input');
-            dInput.type = 'text';
-            dInput.placeholder = "Дата...";
-            dInput.value = dateObj.val;
+state.events.forEach(event => {
+    const row = document.createElement('div');
+    row.className = 'event-row';
 
-            topRow.appendChild(dInput);
+    const nameInput = document.createElement('input');
+    nameInput.className = 'event-name-input';
+    nameInput.value = event.name;
+    nameInput.placeholder = "Название события...";
+    nameInput.dataset.eventId = event.id;
 
-            const isDraft = String(dateObj.id).startsWith('draft');
-            const isFilled = dateObj.val.trim() !== '' || dateObj.desc.trim() !== '';
+    if (focusId === event.id) {
+        setTimeout(() => nameInput.focus(), 0);
+    }
 
-            if (isFilled) {
-                const delDateBtn = document.createElement('button');
-                delDateBtn.className = 'btn btn-danger btn-small';
-                delDateBtn.innerText = '✕';
-                delDateBtn.onclick = () => {
-                    event.dates = event.dates.filter(d => d.id !== dateObj.id);
-                    manageDates(event);
-                    render();
-                    saveLocal();
-                };
-                topRow.appendChild(delDateBtn);
-            }
+    nameInput.oninput = (e) => {
+        event.name = e.target.value;
+        // Первый символ — нужно появление блока дат.
+        // Вместо полного render() добавляем черновик точечно.
+        if (event.name.length === 1 && event.dates.length === 0) {
+            manageDates(event);
+            appendDraftDate(event, datesList);
+        }
+        saveLocal();
+    };
 
-            const descInput = document.createElement('input');
-            descInput.className = 'date-desc-input';
-            descInput.placeholder = "Описание...";
-            descInput.value = dateObj.desc;
-            descInput.dataset.descId = dateObj.id;
+    nameInput.onblur = () => {
+        event.name = event.name.trim();
+        manageEvents();
+        state.events.forEach(manageDates);
+        render();
+        saveLocal();
+    };
 
-            if (focusId === dateObj.id) {
-                setTimeout(() => descInput.focus(), 0);
-            }
+    const datesList = document.createElement('div');
+    datesList.className = 'dates-list';
 
-            descInput.oninput = (e) => {
-                dateObj.desc = e.target.value;
-                if (isDraft && dateObj.desc.trim() !== '') {
-                    dateObj.id = Date.now();
-                    manageDates(event);
-                    render(dateObj.id);
-                }
-                saveLocal();
-            };
+    event.dates.forEach((dateObj) => {
+        const dateItem = document.createElement('div');
+        dateItem.className = 'date-item';
 
-            descInput.onblur = () => {
-                dateObj.desc = dateObj.desc.trim();
+        const topRow = document.createElement('div');
+        topRow.className = 'date-top-row';
+
+        const dInput = document.createElement('input');
+        dInput.type = 'text';
+        dInput.placeholder = "Дата...";
+        dInput.value = dateObj.val;
+
+        topRow.appendChild(dInput);
+
+        const isDraft = String(dateObj.id).startsWith('draft');
+        const isFilled = dateObj.val.trim() !== '' || dateObj.desc.trim() !== '';
+
+        if (isFilled) {
+            const delDateBtn = document.createElement('button');
+            delDateBtn.className = 'btn btn-danger btn-small';
+            delDateBtn.innerText = '✕';
+            delDateBtn.onclick = () => {
+                event.dates = event.dates.filter(d => d.id !== dateObj.id);
                 manageDates(event);
-                manageEvents();
                 render();
                 saveLocal();
             };
+            topRow.appendChild(delDateBtn);
+        }
 
-            dateItem.appendChild(topRow);
-            dateItem.appendChild(descInput);
-            datesList.appendChild(dateItem);
+        const descInput = document.createElement('input');
+        descInput.className = 'date-desc-input';
+        descInput.placeholder = "Описание...";
+        descInput.value = dateObj.desc;
+        descInput.dataset.descId = dateObj.id;
 
-            // Создаём инстанцию и сразу регистрируем её в Map
-            const fpInstance = flatpickr(dInput, {
-                locale: "ru",
-                dateFormat: "d.m.Y",
-                defaultDate: dateObj.val,
-                onChange: (selectedDates, dateStr) => {
-                    dateObj.val = dateStr;
-                    if (isDraft) dateObj.id = Date.now();
-                    manageDates(event);
-                    render();
-                    saveLocal();
-                }
-            });
+        if (focusId === dateObj.id) {
+            setTimeout(() => descInput.focus(), 0);
+        }
 
-            // Ключ — строковый ID даты, гарантированно уникальный в рамках рендера
-            flatpickrInstances.set(String(dateObj.id), fpInstance);
-        });
+        descInput.oninput = (e) => {
+            dateObj.desc = e.target.value;
+            // Черновик стал реальным — меняем ID и добавляем новый черновик,
+            // но не перерисовываем весь DOM.
+            if (isDraft && dateObj.desc.trim() !== '') {
+                dateObj.id = Date.now();
+                manageDates(event);
+                appendDraftDate(event, datesList);
+                // Убираем пунктирный стиль у текущего блока (он больше не черновик)
+                dateItem.style.borderStyle = 'solid';
+                dateItem.style.opacity = '1';
+            }
+            saveLocal();
+        };
 
-        const controls = document.createElement('div');
-        controls.className = 'row-controls';
-        const delEventBtn = document.createElement('button');
-        delEventBtn.className = 'btn btn-danger btn-small';
-        delEventBtn.innerText = 'Удалить';
-        delEventBtn.onclick = () => {
-            state.events = state.events.filter(e => e.id !== event.id);
+        descInput.onblur = () => {
+            dateObj.desc = dateObj.desc.trim();
+            manageDates(event);
+            manageEvents();
             render();
             saveLocal();
         };
-        controls.appendChild(delEventBtn);
 
-        row.appendChild(nameInput);
-        row.appendChild(datesList);
-        row.appendChild(controls);
-        list.appendChild(row);
+        dateItem.appendChild(topRow);
+        dateItem.appendChild(descInput);
+        datesList.appendChild(dateItem);
+
+        // Создаём инстанцию и сразу регистрируем её в Map
+        const fpInstance = flatpickr(dInput, {
+            locale: "ru",
+            dateFormat: "d.m.Y",
+            defaultDate: dateObj.val,
+            onChange: (selectedDates, dateStr) => {
+                dateObj.val = dateStr;
+                if (isDraft) dateObj.id = Date.now();
+                manageDates(event);
+                render();
+                saveLocal();
+            }
+        });
+
+        // Ключ — строковый ID даты, гарантированно уникальный в рамках рендера
+        flatpickrInstances.set(String(dateObj.id), fpInstance);
     });
-}
+
+    const controls = document.createElement('div');
+    controls.className = 'row-controls';
+    const delEventBtn = document.createElement('button');
+    delEventBtn.className = 'btn btn-danger btn-small';
+    delEventBtn.innerText = 'Удалить';
+    delEventBtn.onclick = () => {
+        state.events = state.events.filter(e => e.id !== event.id);
+        render();
+        saveLocal();
+    };
+    controls.appendChild(delEventBtn);
+
+    row.appendChild(nameInput);
+    row.appendChild(datesList);
+    row.appendChild(controls);
+    list.appendChild(row);
+});
 
 function addEvent() {
     const newId = Date.now();
