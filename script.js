@@ -289,6 +289,7 @@ function render(focusId = null) {
         const row = document.createElement('div');
         row.className = 'event-row';
 
+        // --- 1. Контейнер и поле названия ---
         const nameContainer = document.createElement('div');
         nameContainer.className = 'name-container';
 
@@ -302,14 +303,18 @@ function render(focusId = null) {
             setTimeout(() => nameInput.focus(), 0);
         }
 
+        nameContainer.appendChild(nameInput);
+
+        // --- 2. Ячейка категории (метки) ---
         const labelCell = renderLabelCell(event, row);
 
+        // --- 3. Список дат ---
         const datesList = document.createElement('div');
-
         datesList.className = 'dates-list';
 
         nameInput.oninput = (e) => {
             event.name = e.target.value;
+            // Если ввели первый символ и еще нет черновика — создаем его
             if (event.name.length === 1 && !event.dates.some(d => d.isDraft)) {
                 syncDraftDate(event);
                 appendDraftDate(event, datesList);
@@ -319,6 +324,7 @@ function render(focusId = null) {
 
         nameInput.onblur = () => onEventNameBlur(event);
 
+        // Отрисовка существующих дат
         event.dates.forEach(dateObj => {
             const { dateItem, descInput } = buildDateItem(event, dateObj, datesList);
             if (focusId === dateObj.id) {
@@ -327,6 +333,7 @@ function render(focusId = null) {
             datesList.appendChild(dateItem);
         });
 
+        // --- 4. Кнопки управления (Удалить событие) ---
         const controls = document.createElement('div');
         controls.className = 'row-controls';
         const delEventBtn = document.createElement('button');
@@ -339,10 +346,12 @@ function render(focusId = null) {
         };
         controls.appendChild(delEventBtn);
 
-        row.appendChild(nameInput);
+        // --- Сборка строки ---
+        row.appendChild(nameContainer);
         row.appendChild(labelCell);
         row.appendChild(datesList);
         row.appendChild(controls);
+
         list.appendChild(row);
     });
 }
