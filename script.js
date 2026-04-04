@@ -343,8 +343,59 @@ document.addEventListener('DOMContentLoaded', () => {
     if (getToken() && GIST_ID) loadFromGist();
 
     document.getElementById('add-event-btn').onclick = addEvent;
+    document.getElementById('sort-btn').onclick = sortAll;
     document.getElementById('sync-btn').onclick = saveToGist;
     document.getElementById('settings-btn').onclick = openSettings;
     document.getElementById('settings-save').onclick = saveSettings;
     document.getElementById('settings-cancel').onclick = () => toggleModal(false);
 });
+
+// --- Сортировка ---
+
+// Парсит дату вида "dd.mm.yyyy" в объект Date. Возвращает null если пусто.
+function parseDate(str) {
+    if (!str || str.trim() === '') return null;
+    const [d, m, y] = str.trim().split('.').map(Number);
+    return new Date(y, m - 1, d);
+}
+
+// Возвращает минимальную реальную дату события или null если дат нет.
+function firstRealDate(event) {
+    const dates = event.dates
+        .filter(d => !d.isDraft && d.val.trim() !== '')
+        .map(d => parseDate(d.val))
+        .filter(Boolean);
+    if (dates.length === 0) return null;
+    return new Date(Math.min(...dates));
+}
+
+function sortAll() {
+    // 1. Сортируем даты внутри каждого события
+    state.events.forEach(event => {
+        const real = event.dates
+            .filter(d => !d.isDraft)
+            .sort((a, b) => {
+                const da = parseDate(a.val);
+                const db = parseDate(b.val);
+                if (!da && !db) return 0;
+                if (!da) return 1;
+                if (!db) return -1;
+                return da - db;
+            });
+        const draft = event.dates.filter(d => d.isDraft);
+        event.dates = [...real, ...draft];
+    });
+
+    // 2. Сортируем события по первой дате; события без дат — в конец
+    state.events.sort((a, b) => {
+        const da = firstRealDate(a);
+        const db = firstRealDate(b);
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return da - db;
+    });
+
+    render();
+    saveLocal();
+}
