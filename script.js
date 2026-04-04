@@ -50,10 +50,11 @@ function render() {
             const dateItem = document.createElement('div');
             dateItem.className = 'date-item';
 
+            // Создаем текстовое поле для flatpickr
             const dInput = document.createElement('input');
-            dInput.type = 'date';
+            dInput.type = 'text';
             dInput.value = dateObj.val;
-            dInput.onchange = (e) => { dateObj.val = e.target.value; saveLocal(); };
+            dInput.placeholder = "Выбрать дату...";
 
             const delDateBtn = document.createElement('button');
             delDateBtn.className = 'btn btn-danger btn-small';
@@ -67,6 +68,18 @@ function render() {
             dateItem.appendChild(dInput);
             dateItem.appendChild(delDateBtn);
             datesList.appendChild(dateItem);
+
+            // Инициализация flatpickr после добавления в DOM
+            flatpickr(dInput, {
+                locale: "ru",
+                dateFormat: "d.m.Y", // Привычный формат: 15.05.2024
+                defaultDate: dateObj.val,
+                disableMobile: true, // Чтобы на десктопе всегда был кастомный календарь
+                onChange: (selectedDates, dateStr) => {
+                    dateObj.val = dateStr;
+                    saveLocal();
+                }
+            });
         });
 
         // 3. Блок кнопок управления (справа от всех дат)
