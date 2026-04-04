@@ -19,7 +19,10 @@
     <div class="app-container">
         <header>
             <h1>События</h1>
-            <button id="add-event-btn" class="btn btn-primary">Добавить событие</button>
+            <div class="header-controls">
+                <button id="settings-btn" class="btn btn-secondary" title="Настройки">⚙️</button>
+                <button id="add-event-btn" class="btn btn-primary">Добавить событие</button>
+            </div>
         </header>
 
         <div id="events-list" class="events-list">
@@ -29,6 +32,17 @@
         <div class="status-bar">
             <span id="sync-status">Локальное хранилище</span>
             <button id="sync-btn" class="btn btn-small">Синхронизировать с Gist</button>
+        </div>
+    </div>
+    <div id="settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>Настройки GitHub Gist</h3>
+            <p>Введите Token (1-я строка) и Gist ID (2-я строка):</p>
+            <textarea id="settings-input" placeholder="ghp_xxx...&#10;1afd0be..."></textarea>
+            <div class="modal-actions">
+                <button id="settings-cancel" class="btn">Отмена</button>
+                <button id="settings-save" class="btn btn-primary">ОК</button>
+            </div>
         </div>
     </div>
     <script src="script.js"></script>

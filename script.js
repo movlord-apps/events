@@ -1,3 +1,7 @@
+let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
+let GIST_ID = localStorage.getItem('gh_gist_id') || '';
+const GIST_FILENAME = 'events.json';
+
 let state = {
     events: []
 };
@@ -6,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
     document.getElementById('add-event-btn').onclick = addEvent;
     document.getElementById('sync-btn').onclick = saveToGist;
+    document.getElementById('settings-btn').onclick = openSettings;
+    document.getElementById('settings-save').onclick = saveSettings;
+    document.getElementById('settings-cancel').onclick = () => toggleModal(false);
 });
 
 async function init() {
@@ -19,6 +26,37 @@ async function init() {
     // 2. Попытка загрузки из Gist
     if (GITHUB_TOKEN && GIST_ID) {
         await loadFromGist();
+    }
+}
+
+function toggleModal(show) {
+    document.getElementById('settings-modal').style.display = show ? 'flex' : 'none';
+}
+
+function openSettings() {
+    const input = document.getElementById('settings-input');
+    // Заполняем текущими данными из памяти
+    input.value = GITHUB_TOKEN && GIST_ID ? `${GITHUB_TOKEN}\n${GIST_ID}` : '';
+    toggleModal(true);
+}
+
+function saveSettings() {
+    const input = document.getElementById('settings-input').value.trim();
+    const lines = input.split('\n').map(l => l.trim());
+
+    if (lines.length >= 2) {
+        GITHUB_TOKEN = lines[0];
+        GIST_ID = lines[1];
+
+        localStorage.setItem('gh_token', GITHUB_TOKEN);
+        localStorage.setItem('gh_gist_id', GIST_ID);
+
+        alert('Настройки сохранены');
+        toggleModal(false);
+        // Пробуем сразу загрузить данные, если ключи обновились
+        loadFromGist();
+    } else {
+        alert('Введите две строки: Токен и ID');
     }
 }
 
@@ -149,22 +187,28 @@ function saveLocal() {
 }
 
 async function loadFromGist() {
+    if (!GITHUB_TOKEN || !GIST_ID) return;
+
     try {
-        const res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
+        const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+            headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+        });
         if (!res.ok) return;
         const data = await res.json();
         const content = data.files[GIST_FILENAME].content;
-        state = JSON.parse(content);
-        render();
-        document.getElementById('sync-status').innerText = 'Данные синхронизированы с Gist';
+        if (content) {
+            state = JSON.parse(content);
+            render();
+            document.getElementById('sync-status').innerText = 'Данные загружены из Gist';
+        }
     } catch (e) {
-        console.error('Ошибка Gist:', e);
+        console.error('Ошибка загрузки Gist:', e);
     }
 }
 
 async function saveToGist() {
     if (!GITHUB_TOKEN || !GIST_ID) {
-        alert('Заполните GITHUB_TOKEN и GIST_ID в script.js');
+        openSettings(); // Если ключей нет, открываем настройки
         return;
     }
 
@@ -182,10 +226,12 @@ async function saveToGist() {
                 files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } }
             })
         });
+
         if (res.ok) {
-            status.innerText = 'Успешно сохранено в Gist';
+            status.innerText = 'Синхронизировано с Gist: ' + new Date().toLocaleTimeString();
         } else {
-            status.innerText = 'Ошибка API';
+            const err = await res.json();
+            status.innerText = 'Ошибка Gist: ' + (err.message || 'API Error');
         }
     } catch (e) {
         status.innerText = 'Ошибка сети';
