@@ -199,17 +199,16 @@ function buildLabelBadges(event) {
     return wrap;
 }
 
-// Кнопка + выпадающее меню меток
+// Кнопка + выпадающее меню меток (только выбор существующих)
 function buildLabelButton(event, row) {
     const btn = document.createElement('button');
     btn.className = 'btn btn-secondary btn-small label-btn';
     btn.title = 'Метки';
-    btn.textContent = '🏷️';
+    btn.textContent = '🏷';
 
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        // Если уже открыт — закрыть
         const existing = row.querySelector('.label-dropdown');
         closeAllLabelDropdowns();
         if (existing) return;
@@ -217,7 +216,16 @@ function buildLabelButton(event, row) {
         const dropdown = document.createElement('div');
         dropdown.className = 'label-dropdown';
 
-        // Существующие метки
+        // Если меток вообще нет, можно вывести подсказку
+        if (state.labels.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'label-dropdown-item';
+            emptyMsg.style.color = '#666';
+            emptyMsg.textContent = 'Нет созданных меток';
+            dropdown.appendChild(emptyMsg);
+        }
+
+        // Только существующие метки
         state.labels.forEach(label => {
             const item = document.createElement('div');
             item.className = 'label-dropdown-item';
@@ -244,7 +252,8 @@ function buildLabelButton(event, row) {
                     event.labelIds.push(label.id);
                 }
                 closeAllLabelDropdowns();
-                // Перерисовать только бейджи без полного render()
+
+                // Обновляем только бейджи
                 const badges = row.querySelector('.label-badges');
                 const newBadges = buildLabelBadges(event);
                 row.replaceChild(newBadges, badges);
@@ -254,56 +263,8 @@ function buildLabelButton(event, row) {
             dropdown.appendChild(item);
         });
 
-        // Разделитель (только если есть метки)
-        if (state.labels.length > 0) {
-            const sep = document.createElement('div');
-            sep.className = 'label-dropdown-sep';
-            dropdown.appendChild(sep);
-        }
-
-        // Пункт "Новая метка"
-        const newItem = document.createElement('div');
-        newItem.className = 'label-dropdown-item label-dropdown-new';
-
-        const newInput = document.createElement('input');
-        newInput.type = 'text';
-        newInput.placeholder = 'Название метки...';
-        newInput.className = 'label-new-input';
-
-        newInput.addEventListener('click', e => e.stopPropagation());
-
-        newInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') confirmNewLabel();
-            if (e.key === 'Escape') closeAllLabelDropdowns();
-        });
-
-        newInput.addEventListener('blur', () => {
-            // Небольшая задержка чтобы не закрыться раньше клика по кнопке
-            setTimeout(confirmNewLabel, 150);
-        });
-
-        function confirmNewLabel() {
-            const name = newInput.value.trim();
-            if (!name) { closeAllLabelDropdowns(); return; }
-            const label = createLabel(name);
-            state.labels.push(label);
-            if (!event.labelIds) event.labelIds = [];
-            event.labelIds.push(label.id);
-            closeAllLabelDropdowns();
-            const badges = row.querySelector('.label-badges');
-            const newBadges = buildLabelBadges(event);
-            row.replaceChild(newBadges, badges);
-            saveLocal();
-        }
-
-        newItem.appendChild(newInput);
-        dropdown.appendChild(newItem);
-
-        // Позиционируем под кнопкой
         btn.parentElement.style.position = 'relative';
         btn.parentElement.appendChild(dropdown);
-
-        setTimeout(() => newInput.focus(), 0);
     });
 
     return btn;
