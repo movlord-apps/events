@@ -75,19 +75,21 @@ function render() {
         nameInput.placeholder = "Название события...";
         nameInput.dataset.eventId = event.id; // Для поиска элемента после рендера
 
+        if (focusId === event.id) {
+            setTimeout(() => {
+                nameInput.focus();
+                // Если в поле уже есть текст, курсор уйдет в конец
+                const val = nameInput.value;
+                nameInput.value = '';
+                nameInput.value = val;
+            }, 0);
+        }
+
         nameInput.oninput = (e) => {
             event.name = e.target.value;
             manageDates(event);
-            render();
+            render(event.id);
 
-            // Возвращаем фокус в поле названия и ставим курсор в конец
-            const el = document.querySelector(`[data-event-id="${event.id}"]`);
-            if (el) {
-                el.focus();
-                const val = el.value;
-                el.value = ''; // Трюк для перемещения курсора в конец
-                el.value = val;
-            }
             saveLocal();
         };
 
@@ -186,17 +188,17 @@ function render() {
 }
 
 // --- Функции данных ---
-
 function addEvent() {
+    const newId = Date.now(); // Генерируем уникальный ID
     state.events.push({
-        id: Date.now(),
+        id: newId,
         name: '',
-        dates: [] // Изначально дат нет
+        dates: []
     });
-    render();
+
+    render(newId); // Передаем ID в render для установки фокуса
     saveLocal();
 }
-
 function saveLocal() {
     localStorage.setItem('event_app_data', JSON.stringify(state));
     document.getElementById('sync-status').innerText = 'Локально сохранено: ' + new Date().toLocaleTimeString();
