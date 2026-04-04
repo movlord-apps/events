@@ -13,7 +13,6 @@ body {
     color: var(--text);
     font-family: 'Segoe UI', Tahoma, sans-serif;
     margin: 0;
-    padding: 20px;
     overflow-x: auto;
 }
 
@@ -25,7 +24,7 @@ body {
 }
 
 header {
-    margin-bottom: 20px;
+    margin-bottom: 5px;
     display: flex;
     align-items: center;
     gap: 20px;
