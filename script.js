@@ -10,7 +10,7 @@ function setToken(token) {
 
 const GIST_FILENAME = 'events.json';
 
-let state = { events: [] };
+let state = { events: [], updatedAt: null };
 
 // --- Трекинг flatpickr-инстанций ---
 const flatpickrInstances = new Map();
@@ -236,6 +236,7 @@ function addEvent() {
 }
 
 function saveLocal() {
+    state.updatedAt = new Date().toISOString();
     localStorage.setItem('event_app_data', JSON.stringify(state));
     document.getElementById('sync-status').innerText =
         'Локально сохранено: ' + new Date().toLocaleTimeString();
@@ -252,11 +253,23 @@ async function loadFromGist() {
         if (!res.ok) return;
         const data = await res.json();
         const content = data.files[GIST_FILENAME]?.content;
-        if (content) {
-            state = JSON.parse(content);
-            render();
-            document.getElementById('sync-status').innerText = 'Данные загружены из Gist';
+        if (!content) return;
+
+        const remote = JSON.parse(content);
+        const remoteTs = remote.updatedAt ? new Date(remote.updatedAt) : null;
+        const localTs = state.updatedAt ? new Date(state.updatedAt) : null;
+
+        if (remoteTs && localTs && remoteTs <= localTs) {
+            // Локальные данные новее или совпадают — не перезаписываем
+            document.getElementById('sync-status').innerText =
+                'Gist актуален, локальные данные новее';
+            return;
         }
+
+        state = remote;
+        render();
+        document.getElementById('sync-status').innerText =
+            'Данные загружены из Gist (' + new Date(remoteTs).toLocaleTimeString() + ')';
     } catch (e) {
         console.error('Ошибка загрузки Gist:', e);
     }
