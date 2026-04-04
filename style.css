@@ -235,3 +235,14 @@ h1 {
     gap: 20px;
     align-items: center;
 }
+
+#sync-btn {
+    background: #222;
+    color: #888;
+    border: 1px solid #333;
+}
+
+#sync-btn:hover {
+    background: #2a2a2a;
+    color: #aaa;
+}
