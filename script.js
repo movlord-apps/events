@@ -320,8 +320,7 @@ async function loadFromGist() {
         isDirty = false;
         if (!state.labels) state.labels = [];
         state.events.forEach(event => {
-            if (!('labelId' in event)) event.labelId = event.labelIds?.[0] ?? null;
-            delete event.labelIds;
+            if (!('labelId' in event)) event.labelId = null;
             syncDraftDate(event);
         });
         sortAll(true);
@@ -403,8 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state = JSON.parse(local);
         if (!state.labels) state.labels = [];
         state.events.forEach(event => {
-            if (!('labelId' in event)) event.labelId = event.labelIds?.[0] ?? null;
-            delete event.labelIds;
+            if (!('labelId' in event)) event.labelId = null;
             syncDraftDate(event);
         });
         render();
@@ -707,8 +705,7 @@ function processLoadedData(data) {
     if (!state.labels) state.labels = [];
 
     state.events.forEach(event => {
-        if (!('labelId' in event)) event.labelId = event.labelIds?.[0] ?? null;
-        delete event.labelIds;
+        if (!('labelId' in event)) event.labelId = null;
 
         // Помечаем все загруженные даты как реальные
         event.dates.forEach(d => {
