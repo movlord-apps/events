@@ -32,33 +32,32 @@ function render() {
 
         // 1. Поле названия (300px)
         const nameInput = document.createElement('input');
-        nameInput.type = 'text';
         nameInput.className = 'event-name-input';
         nameInput.value = event.name;
         nameInput.oninput = (e) => { event.name = e.target.value; saveLocal(); };
 
-        // 2. Контейнер для дат (каждая по 200px)
+        // 2. Контейнер дат
         const datesList = document.createElement('div');
         datesList.className = 'dates-list';
 
-        event.dates.forEach(dateObj => {
+        event.dates.forEach((dateObj, index) => {
             const dateItem = document.createElement('div');
             dateItem.className = 'date-item';
 
-            // 1. Верхняя часть: Дата + Удалить
             const topRow = document.createElement('div');
             topRow.className = 'date-top-row';
 
             const dInput = document.createElement('input');
             dInput.type = 'text';
             dInput.placeholder = "Дата...";
-            dInput.value = dateObj.val || '';
+            dInput.value = dateObj.val;
 
             const delDateBtn = document.createElement('button');
             delDateBtn.className = 'btn btn-danger btn-small';
             delDateBtn.innerText = '✕';
             delDateBtn.onclick = () => {
                 event.dates = event.dates.filter(d => d.id !== dateObj.id);
+                if (event.dates.length === 0) event.dates.push({ id: Date.now(), val: '', desc: '' });
                 render();
                 saveLocal();
             };
@@ -66,50 +65,54 @@ function render() {
             topRow.appendChild(dInput);
             topRow.appendChild(delDateBtn);
 
-            // 2. Нижняя часть: Описание
             const descInput = document.createElement('input');
-            descInput.type = 'text';
             descInput.className = 'date-desc-input';
-            descInput.placeholder = "Описание (напр. Дедлайн)";
-            descInput.value = dateObj.desc || ''; // Используем поле desc из объекта
+            descInput.placeholder = "Описание...";
+            descInput.value = dateObj.desc;
+
+            // ЛОГИКА АВТОМАТИКИ
             descInput.oninput = (e) => {
                 dateObj.desc = e.target.value;
+                // Если это был последний блок и его начали заполнять — добавим новый
+                if (index === event.dates.length - 1 && dateObj.desc) {
+                    manageDates(event);
+                    render();
+                    // Возвращаем фокус в текущее поле, так как render его сбросил
+                    document.querySelector(`[data-id="${dateObj.id}"]`).focus();
+                }
                 saveLocal();
             };
+
+            descInput.onblur = () => {
+                // При выходе из поля проверяем, не стало ли оно пустым (кроме последнего)
+                const oldLen = event.dates.length;
+                manageDates(event);
+                if (event.dates.length !== oldLen) render();
+            };
+
+            // Чтобы найти инпут после перерисовки
+            descInput.dataset.id = dateObj.id;
 
             dateItem.appendChild(topRow);
             dateItem.appendChild(descInput);
             datesList.appendChild(dateItem);
 
-            // Инициализация flatpickr
             flatpickr(dInput, {
                 locale: "ru",
                 dateFormat: "d.m.Y",
                 defaultDate: dateObj.val,
                 onChange: (selectedDates, dateStr) => {
                     dateObj.val = dateStr;
+                    manageDates(event);
+                    render();
                     saveLocal();
                 }
             });
         });
 
-        // 3. Блок кнопок управления (справа от всех дат)
+        // 3. Кнопки управления (только удаление события)
         const controls = document.createElement('div');
         controls.className = 'row-controls';
-
-        const addDateBtn = document.createElement('button');
-        addDateBtn.className = 'btn btn-primary btn-small';
-        addDateBtn.innerText = '+ Дата';
-        addDateBtn.onclick = () => {
-            event.dates.push({
-                id: Date.now(),
-                val: '',
-                desc: '' // Добавляем поддержку описания
-            });
-            render();
-            saveLocal();
-        };
-
         const delEventBtn = document.createElement('button');
         delEventBtn.className = 'btn btn-danger btn-small';
         delEventBtn.innerText = 'Удалить событие';
@@ -118,15 +121,11 @@ function render() {
             render();
             saveLocal();
         };
-
-        controls.appendChild(addDateBtn);
         controls.appendChild(delEventBtn);
 
-        // Собираем строку: Название -> Даты -> Кнопки
         row.appendChild(nameInput);
         row.appendChild(datesList);
         row.appendChild(controls);
-
         list.appendChild(row);
     });
 }
@@ -134,11 +133,12 @@ function render() {
 // --- Функции данных ---
 
 function addEvent() {
-    state.events.push({
+    const newEvent = {
         id: Date.now(),
         name: '',
-        dates: []
-    });
+        dates: [{ id: Date.now() + 1, val: '', desc: '' }]
+    };
+    state.events.push(newEvent);
     render();
     saveLocal();
 }
@@ -189,5 +189,23 @@ async function saveToGist() {
         }
     } catch (e) {
         status.innerText = 'Ошибка сети';
+    }
+}
+
+/**
+ * Логика авто-добавления и удаления пустых блоков
+ */
+function manageDates(event) {
+    // 1. Удаляем все абсолютно пустые блоки, кроме последнего
+    const lastIndex = event.dates.length - 1;
+    event.dates = event.dates.filter((d, index) => {
+        const isEmpty = !d.val && !d.desc;
+        return !isEmpty || index === lastIndex;
+    });
+
+    // 2. Если последний блок заполнили (хотя бы одно поле), добавляем новый пустой
+    const last = event.dates[event.dates.length - 1];
+    if (last && (last.val || last.desc)) {
+        event.dates.push({ id: Date.now(), val: '', desc: '' });
     }
 }

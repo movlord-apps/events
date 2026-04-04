@@ -135,6 +135,16 @@ h1 {
     border-color: var(--accent);
 }
 
+.date-item:last-child {
+    border-style: dashed;
+    opacity: 0.7;
+}
+
+.date-item:last-child:focus-within {
+    border-style: solid;
+    opacity: 1;
+}
+
 /* Стилизация самого календаря flatpickr под наш интерфейс */
 .flatpickr-calendar {
     background: #1e1e1e !important;
@@ -144,11 +154,9 @@ h1 {
 
 /* Блок кнопок в конце строки */
 .row-controls {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-    margin-left: 10px;
-    /* Отступ кнопок от последней даты */
+    margin-left: auto;
+    /* Прижать кнопку удаления события к правому краю */
+    padding-left: 20px;
 }
 
 .status-bar {
