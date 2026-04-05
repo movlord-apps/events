@@ -523,3 +523,17 @@ h1 {
 .label-cell:hover .label-placeholder {
     opacity: 1;
 }
+
+.cal-btn {
+    font-size: 11px;
+    padding: 2px 4px;
+    opacity: 0.4;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: white;
+}
+
+.cal-btn:hover {
+    opacity: 1;
+}

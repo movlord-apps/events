@@ -1,4 +1,4 @@
-const APP_VERSION = '1.1';
+const APP_VERSION = '1.2';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -22,7 +22,6 @@ let _fp = null;
 let _fpTarget = null; // текущий input к которому привязан
 
 function initGlobalFlatpickr() {
-    // Создаём скрытый элемент-якорь
     const anchor = document.createElement('input');
     anchor.type = 'text';
     anchor.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
@@ -31,9 +30,9 @@ function initGlobalFlatpickr() {
     _fp = flatpickr(anchor, {
         locale: 'ru',
         dateFormat: 'd.m.Y',
-        allowInput: true,
-        onClose(selectedDates, dateStr) {
-            if (_fpTarget && dateStr !== _fpTarget.value) {
+        // При выборе даты в календаре — пишем в целевой input и сохраняем
+        onChange(selectedDates, dateStr) {
+            if (_fpTarget && dateStr) {
                 _fpTarget.value = dateStr;
                 _fpTarget.dispatchEvent(new Event('datechange', { bubbles: true }));
             }
@@ -41,15 +40,15 @@ function initGlobalFlatpickr() {
     });
 }
 
-// Привязать глобальный flatpickr к конкретному input при фокусе
-function attachFlatpickr(input) {
-    _fpTarget = input;
-    _fp.setDate(input.value || null, false);
+// Открыть календарь под кнопкой, выбранная дата запишется в _fpTarget
+function openCalendarFor(targetInput, calendarBtn) {
+    _fpTarget = targetInput;
+    _fp.setDate(targetInput.value || null, false);
     _fp.open();
-    // Позиционируем календарь под input
-    const rect = input.getBoundingClientRect();
+    const rect = calendarBtn.getBoundingClientRect();
     if (_fp.calendarContainer) {
-        _fp.calendarContainer.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+        _fp.calendarContainer.style.position = 'fixed';
+        _fp.calendarContainer.style.top = (rect.bottom + 4) + 'px';
         _fp.calendarContainer.style.left = rect.left + 'px';
     }
 }
@@ -183,9 +182,17 @@ function buildDateItem(event, dateObj, datesList) {
     dateItem.appendChild(topRow);
     dateItem.appendChild(descInput);
 
-    // Открываем календарь только по клику, не по фокусу
-    // (фокус используется для ручного ввода/вставки)
-    dInput.addEventListener('click', () => attachFlatpickr(dInput));
+    // Кнопка-иконка открывает календарь — dInput остаётся чистым текстовым полем
+    const calBtn = document.createElement('button');
+    calBtn.className = 'btn btn-secondary btn-small cal-btn';
+    calBtn.textContent = '📅';
+    calBtn.title = 'Выбрать дату';
+    calBtn.type = 'button';
+    calBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // не уводим фокус с dInput
+        openCalendarFor(dInput, calBtn);
+    });
+    topRow.appendChild(calBtn);
 
     // Дата выбрана через календарь
     dInput.addEventListener('datechange', () => {
@@ -201,13 +208,11 @@ function buildDateItem(event, dateObj, datesList) {
     // Ручной ввод / вставка — обрабатываем при blur
     dInput.addEventListener('blur', () => {
         const dateStr = dInput.value.trim();
-        // Ничего не введено — сбрасываем к сохранённому значению
         if (!dateStr) {
             dInput.value = dateObj.val;
             return;
         }
         if (dateStr === dateObj.val) return;
-        // Проверяем формат дд.мм.гггг
         const parsed = parseDate(dateStr);
         if (parsed) {
             dateObj.val = dateStr;
@@ -216,7 +221,6 @@ function buildDateItem(event, dateObj, datesList) {
             render();
             saveLocalNow();
         } else {
-            // Формат не распознан — возвращаем старое значение
             dInput.value = dateObj.val;
         }
     });
