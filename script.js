@@ -1,4 +1,4 @@
-const APP_VERSION = '1.0';
+const APP_VERSION = '1.1';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -183,10 +183,11 @@ function buildDateItem(event, dateObj, datesList) {
     dateItem.appendChild(topRow);
     dateItem.appendChild(descInput);
 
-    // Открываем глобальный flatpickr при фокусе на поле
-    dInput.addEventListener('focus', () => attachFlatpickr(dInput));
+    // Открываем календарь только по клику, не по фокусу
+    // (фокус используется для ручного ввода/вставки)
+    dInput.addEventListener('click', () => attachFlatpickr(dInput));
 
-    // Получаем дату из глобального flatpickr
+    // Дата выбрана через календарь
     dInput.addEventListener('datechange', () => {
         const dateStr = dInput.value;
         if (dateStr === dateObj.val) return;
@@ -197,19 +198,26 @@ function buildDateItem(event, dateObj, datesList) {
         saveLocalNow();
     });
 
-    // Ручной ввод — обрабатываем при blur
+    // Ручной ввод / вставка — обрабатываем при blur
     dInput.addEventListener('blur', () => {
         const dateStr = dInput.value.trim();
-        if (dateStr && dateStr !== dateObj.val) {
-            // Пробуем распарсить вручную введённую дату (дд.мм.гггг)
-            const parsed = parseDate(dateStr);
-            if (parsed) {
-                dateObj.val = dateStr;
-                if (dateObj.isDraft) promoteDraft(dateObj);
-                syncDraftDate(event);
-                render();
-                saveLocalNow();
-            }
+        // Ничего не введено — сбрасываем к сохранённому значению
+        if (!dateStr) {
+            dInput.value = dateObj.val;
+            return;
+        }
+        if (dateStr === dateObj.val) return;
+        // Проверяем формат дд.мм.гггг
+        const parsed = parseDate(dateStr);
+        if (parsed) {
+            dateObj.val = dateStr;
+            if (dateObj.isDraft) promoteDraft(dateObj);
+            syncDraftDate(event);
+            render();
+            saveLocalNow();
+        } else {
+            // Формат не распознан — возвращаем старое значение
+            dInput.value = dateObj.val;
         }
     });
 
