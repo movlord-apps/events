@@ -13,15 +13,46 @@ const GIST_FILENAME = 'events.json';
 let state = { events: [], labels: [], updatedAt: null };
 let isDirty = false;
 
-// --- Трекинг flatpickr-инстанций ---
-const flatpickrInstances = new Map();
+// --- Один глобальный flatpickr ---
+// Вместо сотен инстанций — один, который цепляется к полю при фокусе.
+let _fp = null;
+let _fpTarget = null; // текущий input к которому привязан
 
-function destroyAllFlatpickr() {
-    flatpickrInstances.forEach(instance => {
-        try { instance.destroy(); } catch { }
+function initGlobalFlatpickr() {
+    // Создаём скрытый элемент-якорь
+    const anchor = document.createElement('input');
+    anchor.type = 'text';
+    anchor.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
+    document.body.appendChild(anchor);
+
+    _fp = flatpickr(anchor, {
+        locale: 'ru',
+        dateFormat: 'd.m.Y',
+        allowInput: true,
+        onClose(selectedDates, dateStr) {
+            if (_fpTarget && dateStr !== _fpTarget.value) {
+                _fpTarget.value = dateStr;
+                _fpTarget.dispatchEvent(new Event('datechange', { bubbles: true }));
+            }
+        }
     });
-    flatpickrInstances.clear();
 }
+
+// Привязать глобальный flatpickr к конкретному input при фокусе
+function attachFlatpickr(input) {
+    _fpTarget = input;
+    _fp.setDate(input.value || null, false);
+    _fp.open();
+    // Позиционируем календарь под input
+    const rect = input.getBoundingClientRect();
+    if (_fp.calendarContainer) {
+        _fp.calendarContainer.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+        _fp.calendarContainer.style.left = rect.left + 'px';
+    }
+}
+
+// Совместимость — destroyAllFlatpickr больше ничего не делает
+function destroyAllFlatpickr() { }
 
 // --- Фабрики данных ---
 function createEvent() {
@@ -149,19 +180,35 @@ function buildDateItem(event, dateObj, datesList) {
     dateItem.appendChild(topRow);
     dateItem.appendChild(descInput);
 
-    const fpInstance = flatpickr(dInput, {
-        locale: 'ru',
-        dateFormat: 'd.m.Y',
-        defaultDate: dateObj.val || null,
-        onChange: (_, dateStr) => {
-            dateObj.val = dateStr;
-            if (dateObj.isDraft) promoteDraft(dateObj);
-            syncDraftDate(event);
-            render();
-            saveLocalNow();
+    // Открываем глобальный flatpickr при фокусе на поле
+    dInput.addEventListener('focus', () => attachFlatpickr(dInput));
+
+    // Получаем дату из глобального flatpickr
+    dInput.addEventListener('datechange', () => {
+        const dateStr = dInput.value;
+        if (dateStr === dateObj.val) return;
+        dateObj.val = dateStr;
+        if (dateObj.isDraft) promoteDraft(dateObj);
+        syncDraftDate(event);
+        render();
+        saveLocalNow();
+    });
+
+    // Ручной ввод — обрабатываем при blur
+    dInput.addEventListener('blur', () => {
+        const dateStr = dInput.value.trim();
+        if (dateStr && dateStr !== dateObj.val) {
+            // Пробуем распарсить вручную введённую дату (дд.мм.гггг)
+            const parsed = parseDate(dateStr);
+            if (parsed) {
+                dateObj.val = dateStr;
+                if (dateObj.isDraft) promoteDraft(dateObj);
+                syncDraftDate(event);
+                render();
+                saveLocalNow();
+            }
         }
     });
-    flatpickrInstances.set(dateObj.id, fpInstance);
 
     return { dateItem, descInput };
 }
@@ -179,7 +226,9 @@ function createLabel(name) {
 // --- Основной рендер ---
 
 function render(focusId = null) {
-    destroyAllFlatpickr();
+    // Закрываем календарь перед перерисовкой чтобы не осталось висячих
+    if (_fp) _fp.close();
+    _fpTarget = null;
     const h1 = document.querySelector('header h1');
     if (h1) h1.textContent = getGlobalCountdownText();
     const list = document.getElementById('events-list');
@@ -410,6 +459,7 @@ function saveSettings() {
 // --- Инициализация ---
 
 document.addEventListener('DOMContentLoaded', () => {
+    initGlobalFlatpickr();
     const local = localStorage.getItem('event_app_data');
     if (local) {
         state = JSON.parse(local);
