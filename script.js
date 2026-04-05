@@ -74,7 +74,7 @@ function onEventNameBlur(event) {
     removeEmptyEvents();
     state.events.forEach(syncDraftDate);
     render();
-    saveLocal();
+    saveLocalNow();
 }
 
 function onDateDescBlur(event, dateObj) {
@@ -83,7 +83,7 @@ function onDateDescBlur(event, dateObj) {
     syncDraftDate(event);
     removeEmptyEvents();
     render();
-    saveLocal();
+    saveLocalNow();
 }
 
 // --- DOM: точечное добавление чернового блока ---
@@ -121,7 +121,7 @@ function buildDateItem(event, dateObj, datesList) {
             event.dates = event.dates.filter(d => d.id !== dateObj.id);
             syncDraftDate(event);
             render();
-            saveLocal();
+            saveLocalNow();
         };
         topRow.appendChild(delBtn);
     }
@@ -158,7 +158,7 @@ function buildDateItem(event, dateObj, datesList) {
             if (dateObj.isDraft) promoteDraft(dateObj);
             syncDraftDate(event);
             render();
-            saveLocal();
+            saveLocalNow();
         }
     });
     flatpickrInstances.set(dateObj.id, fpInstance);
@@ -246,7 +246,7 @@ function render(focusId = null) {
         delEventBtn.onclick = () => {
             state.events = state.events.filter(e => e.id !== event.id);
             render();
-            saveLocal();
+            saveLocalNow();
         };
         controls.appendChild(delEventBtn);
 
@@ -281,15 +281,28 @@ function stateForStorage() {
     };
 }
 
+let _saveTimer = null;
+
 function saveLocal() {
-    isDirty = true; // Данные изменились относительно Gist
+    isDirty = true;
+    // Дебаунс: реально пишем в localStorage не чаще раза в секунду
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(() => {
+        state.updatedAt = new Date().toISOString();
+        localStorage.setItem('event_app_data', JSON.stringify(stateForStorage()));
+        const statusEl = document.getElementById('sync-status');
+        if (statusEl) statusEl.innerText = 'Локально сохранено (есть изменения для Gist)';
+    }, 1000);
+}
+
+// Немедленное сохранение — для критичных моментов (blur, удаление, закрытие вкладки)
+function saveLocalNow() {
+    clearTimeout(_saveTimer);
+    isDirty = true;
     state.updatedAt = new Date().toISOString();
     localStorage.setItem('event_app_data', JSON.stringify(stateForStorage()));
-
     const statusEl = document.getElementById('sync-status');
-    if (statusEl) {
-        statusEl.innerText = 'Локально сохранено (есть изменения для Gist)';
-    }
+    if (statusEl) statusEl.innerText = 'Локально сохранено (есть изменения для Gist)';
 }
 
 async function loadFromGist() {
@@ -446,6 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Синхронизация при закрытии вкладки или уходе со страницы
     window.addEventListener('pagehide', () => {
+        clearTimeout(_saveTimer);
         sortAll(false);
         const token = getToken();
         // Проверяем наличие ключей и данных
@@ -521,7 +535,7 @@ function sortAll(shouldRender = true) {
     if (shouldRender) {
         render();
     }
-    saveLocal();
+    saveLocalNow();
 }
 
 // --- Логика управления метками ---
@@ -556,8 +570,11 @@ function renderLabelsMgmt() {
         colorInp.value = label.color || '#252525';
         colorInp.onchange = (e) => {
             label.color = e.target.value;
-            saveLocal();
-            render();
+            saveLocalNow();
+            // Обновляем только бейджи с этой меткой, не перерисовываем всё
+            document.querySelectorAll('.label-badge').forEach(badge => {
+                if (badge.title === label.name) badge.style.background = label.color;
+            });
         };
 
         // Название
@@ -565,9 +582,16 @@ function renderLabelsMgmt() {
         nameInp.className = 'label-mgmt-name';
         nameInp.value = label.name;
         nameInp.onblur = (e) => {
+            const oldName = label.name;
             label.name = e.target.value.trim() || 'Без названия';
-            saveLocal();
-            render();
+            saveLocalNow();
+            // Обновляем только текст бейджей с этой меткой
+            document.querySelectorAll('.label-badge').forEach(badge => {
+                if (badge.title === oldName) {
+                    badge.textContent = label.name;
+                    badge.title = label.name;
+                }
+            });
         };
 
         // Кнопка удаления
@@ -583,9 +607,9 @@ function renderLabelsMgmt() {
             state.events.forEach(ev => {
                 if (ev.labelId === label.id) ev.labelId = null;
             });
-            saveLocal();
-            renderLabelsMgmt(); // Перерисовываем только содержимое
-            render(); // Обновляем основной список
+            saveLocalNow();
+            renderLabelsMgmt();
+            render();
         };
 
         actions.appendChild(delBtn);
@@ -615,8 +639,8 @@ function renderLabelsMgmt() {
         const name = newInp.value.trim();
         if (name) {
             state.labels.push({ id: 'label-' + Date.now(), name, color: '#0078d4' });
-            saveLocal();
-            renderLabelsMgmt(); // Перерисовываем содержимое, меню остается открытым
+            saveLocalNow();
+            renderLabelsMgmt();
             render();
             // Опционально: вернуть фокус в поле ввода новой метки
             document.getElementById('new-label-name').focus();
@@ -688,7 +712,7 @@ function renderLabelCell(event, row) {
                 dropdown.remove();
                 const newCell = renderLabelCell(event, row);
                 row.replaceChild(newCell, cell);
-                saveLocal();
+                saveLocalNow();
             };
 
             dropdown.appendChild(item);
