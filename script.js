@@ -1,4 +1,4 @@
-const APP_VERSION = '1.2';
+const APP_VERSION = '1.3';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -145,6 +145,18 @@ function buildDateItem(event, dateObj, datesList) {
     dInput.value = dateObj.val;
     topRow.appendChild(dInput);
 
+    // Кнопка-иконка открывает календарь — dInput остаётся чистым текстовым полем
+    const calBtn = document.createElement('button');
+    calBtn.className = 'btn btn-secondary btn-small cal-btn';
+    calBtn.textContent = '📅';
+    calBtn.title = 'Выбрать дату';
+    calBtn.type = 'button';
+    calBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // не уводим фокус с dInput
+        openCalendarFor(dInput, calBtn);
+    });
+    topRow.appendChild(calBtn);
+
     const isFilled = dateObj.val.trim() !== '' || dateObj.desc.trim() !== '';
     if (isFilled) {
         const delBtn = document.createElement('button');
@@ -181,18 +193,6 @@ function buildDateItem(event, dateObj, datesList) {
 
     dateItem.appendChild(topRow);
     dateItem.appendChild(descInput);
-
-    // Кнопка-иконка открывает календарь — dInput остаётся чистым текстовым полем
-    const calBtn = document.createElement('button');
-    calBtn.className = 'btn btn-secondary btn-small cal-btn';
-    calBtn.textContent = '📅';
-    calBtn.title = 'Выбрать дату';
-    calBtn.type = 'button';
-    calBtn.addEventListener('mousedown', (e) => {
-        e.preventDefault(); // не уводим фокус с dInput
-        openCalendarFor(dInput, calBtn);
-    });
-    topRow.appendChild(calBtn);
 
     // Дата выбрана через календарь
     dInput.addEventListener('datechange', () => {
