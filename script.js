@@ -1,3 +1,6 @@
+const APP_VERSION = '1.0';
+console.log('App version:', APP_VERSION);
+
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
 let GIST_ID = localStorage.getItem('gh_gist_id') || '';
 
@@ -231,6 +234,8 @@ function render(focusId = null) {
     _fpTarget = null;
     const h1 = document.querySelector('header h1');
     if (h1) h1.textContent = getGlobalCountdownText();
+    const countEl = document.getElementById('event-count');
+    if (countEl) countEl.textContent = 'Всего: ' + state.events.length;
     const list = document.getElementById('events-list');
     list.innerHTML = '';
 
