@@ -141,7 +141,7 @@ h1 {
 /* Строка события */
 .event-row {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 15px;
     padding: 10px 0;
     border-bottom: 1px solid var(--border);
@@ -175,10 +175,11 @@ h1 {
     display: block;
     resize: none;
     overflow: hidden;
+    /* Каждая строка не переносится — длинный текст обрезается за краем */
+    white-space: pre;
     font-family: 'Segoe UI', Tahoma, sans-serif;
     font-size: 13px;
     line-height: 1.4;
-    transition: height 0.1s;
 }
 
 .event-countdown {

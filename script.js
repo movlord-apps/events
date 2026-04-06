@@ -283,7 +283,7 @@ function render(focusId = null) {
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const lines = nameInput.value.split('\n');
-                if (lines.length >= 3) e.preventDefault();
+                if (lines.length >= 3) e.preventDefault(); // максимум 3 строки
             }
         });
 
