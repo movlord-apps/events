@@ -1,4 +1,4 @@
-const APP_VERSION = '1.0';
+const APP_VERSION = '1.1';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -287,7 +287,8 @@ function render(focusId = null) {
                 if (isUrl) {
                     const a = document.createElement('a');
                     a.href = line.trim();
-                    a.textContent = line.trim();
+                    // Убираем протокол для отображения
+                    a.textContent = line.trim().replace(/^https?:\/\//, '');
                     a.target = '_blank';
                     a.rel = 'noopener noreferrer';
                     a.className = 'event-name-link';
