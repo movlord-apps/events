@@ -321,8 +321,10 @@ function render(focusId = null) {
             nameView.style.display = 'block';
         }
 
-        // Двойной клик на view — переключаем в edit
-        nameView.addEventListener('dblclick', switchToEdit);
+        // Одиночный клик на view — переключаем в edit (ссылки работают нативно)
+        nameView.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'A') switchToEdit();
+        });
 
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
