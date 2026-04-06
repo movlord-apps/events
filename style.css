@@ -543,3 +543,42 @@ h1 {
 .cal-btn:hover {
     opacity: 1;
 }
+
+/* --- Режим просмотра названия --- */
+
+.event-name-view {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: white;
+    padding: 6px;
+    border-radius: 3px;
+    cursor: text;
+    min-height: calc(1.4em * 3 + 12px);
+    /* 3 строки */
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.event-name-view:hover {
+    border-color: #555;
+}
+
+.event-name-line {
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-height: 1.4em;
+}
+
+.event-name-link {
+    color: #4da3ff;
+    text-decoration: none;
+}
+
+.event-name-link:hover {
+    text-decoration: underline;
+}

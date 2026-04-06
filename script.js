@@ -273,27 +273,76 @@ function render(focusId = null) {
         const nameContainer = document.createElement('div');
         nameContainer.className = 'name-container';
 
+        // --- Режим просмотра ---
+        const nameView = document.createElement('div');
+        nameView.className = 'event-name-view';
+
+        function renderNameView() {
+            nameView.innerHTML = '';
+            const lines = event.name.split('\n');
+            lines.forEach(line => {
+                const lineEl = document.createElement('div');
+                lineEl.className = 'event-name-line';
+                const isUrl = /^https?:\/\/\S+/.test(line.trim());
+                if (isUrl) {
+                    const a = document.createElement('a');
+                    a.href = line.trim();
+                    a.textContent = line.trim();
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.className = 'event-name-link';
+                    lineEl.appendChild(a);
+                } else {
+                    lineEl.textContent = line || '\u00A0'; // неразрывный пробел для пустых строк
+                }
+                nameView.appendChild(lineEl);
+            });
+        }
+        renderNameView();
+
+        // --- Режим редактирования ---
         const nameInput = document.createElement('textarea');
         nameInput.className = 'event-name-input';
         nameInput.value = event.name;
         nameInput.placeholder = 'Название события...';
         nameInput.dataset.eventId = event.id;
         nameInput.rows = 3;
+        nameInput.style.display = 'none';
+
+        function switchToEdit() {
+            nameView.style.display = 'none';
+            nameInput.style.display = 'block';
+            nameInput.focus();
+        }
+
+        function switchToView() {
+            renderNameView();
+            nameInput.style.display = 'none';
+            nameView.style.display = 'block';
+        }
+
+        // Двойной клик на view — переключаем в edit
+        nameView.addEventListener('dblclick', switchToEdit);
 
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const lines = nameInput.value.split('\n');
-                if (lines.length >= 3) e.preventDefault(); // максимум 3 строки
+                if (lines.length >= 3) e.preventDefault();
+            }
+            if (e.key === 'Escape') {
+                nameInput.blur();
             }
         });
 
         if (focusId === event.id) {
-            setTimeout(() => nameInput.focus(), 0);
+            setTimeout(() => switchToEdit(), 0);
         }
+
         const countdownEl = document.createElement('div');
         countdownEl.className = 'event-countdown';
         countdownEl.textContent = getCountdownText(event);
 
+        nameContainer.appendChild(nameView);
         nameContainer.appendChild(nameInput);
 
         // --- 2. Ячейка категории (метки) ---
@@ -314,7 +363,10 @@ function render(focusId = null) {
             saveLocal();
         };
 
-        nameInput.onblur = () => onEventNameBlur(event);
+        nameInput.onblur = () => {
+            onEventNameBlur(event);
+            switchToView();
+        };
 
         // Отрисовка существующих дат
         event.dates.forEach(dateObj => {
