@@ -1,4 +1,4 @@
-const APP_VERSION = '1.4';
+const APP_VERSION = '1.5';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -30,12 +30,19 @@ function initGlobalFlatpickr() {
     _fp = flatpickr(anchor, {
         locale: 'ru',
         dateFormat: 'd.m.Y',
-        // При выборе даты в календаре — пишем в целевой input и сохраняем
+        appendTo: document.body,
+        static: true,          // не закрывается при потере фокуса anchor
+        disableMobile: true,
         onChange(selectedDates, dateStr) {
             if (_fpTarget && dateStr) {
                 _fpTarget.value = dateStr;
                 _fpTarget.dispatchEvent(new Event('datechange', { bubbles: true }));
+                _fp.close();
             }
+        },
+        onClose() {
+            // не сбрасываем _fpTarget сразу — datechange должен успеть сработать
+            setTimeout(() => { _fpTarget = null; }, 100);
         }
     });
 }
