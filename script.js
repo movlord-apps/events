@@ -1,4 +1,4 @@
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.4';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -42,15 +42,34 @@ function initGlobalFlatpickr() {
 
 // Открыть календарь под кнопкой, выбранная дата запишется в _fpTarget
 function openCalendarFor(targetInput, calendarBtn) {
+    console.log('[cal] openCalendarFor called', { _fp, targetInput, calendarBtn });
     _fpTarget = targetInput;
     _fp.setDate(targetInput.value || null, false);
+    console.log('[cal] setDate done, calling open()');
     _fp.open();
+    console.log('[cal] open() called, calendarContainer:', _fp.calendarContainer);
+
     const rect = calendarBtn.getBoundingClientRect();
-    if (_fp.calendarContainer) {
-        _fp.calendarContainer.style.position = 'fixed';
-        _fp.calendarContainer.style.top = (rect.bottom + 4) + 'px';
-        _fp.calendarContainer.style.left = rect.left + 'px';
+    const cal = _fp.calendarContainer;
+    console.log('[cal] rect:', rect, 'cal:', cal);
+    if (cal) {
+        cal.style.position = 'fixed';
+        cal.style.top = (rect.bottom + 4) + 'px';
+        cal.style.left = rect.left + 'px';
+        cal.style.zIndex = '9999';
+        console.log('[cal] positioned at', cal.style.top, cal.style.left);
+    } else {
+        console.warn('[cal] calendarContainer is null!');
     }
+
+    requestAnimationFrame(() => {
+        console.log('[cal] rAF, cal visible:', cal ? cal.style.display : 'no cal');
+        if (cal) {
+            cal.style.position = 'fixed';
+            cal.style.top = (rect.bottom + 4) + 'px';
+            cal.style.left = rect.left + 'px';
+        }
+    });
 }
 
 // Совместимость — destroyAllFlatpickr больше ничего не делает
