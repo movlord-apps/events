@@ -1,4 +1,4 @@
-const APP_VERSION = '1.1';
+const APP_VERSION = '1.0';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -278,33 +278,13 @@ function render(focusId = null) {
         nameInput.value = event.name;
         nameInput.placeholder = 'Название события...';
         nameInput.dataset.eventId = event.id;
-        nameInput.rows = 1;
+        nameInput.rows = 3;
 
-        // Запрет переноса Enter в onkeydown — обрабатываем вручную
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const lines = nameInput.value.split('\n');
-                if (lines.length >= 3) e.preventDefault(); // не больше 3 строк
+                if (lines.length >= 3) e.preventDefault();
             }
-        });
-
-        nameInput.addEventListener('mouseenter', () => {
-            nameInput.rows = 3;
-            countdownEl.style.display = 'none';
-        });
-        nameInput.addEventListener('mouseleave', () => {
-            if (document.activeElement !== nameInput) {
-                nameInput.rows = 1;
-                countdownEl.style.display = '';
-            }
-        });
-        nameInput.addEventListener('focus', () => {
-            nameInput.rows = 3;
-            countdownEl.style.display = 'none';
-        });
-        nameInput.addEventListener('blur', () => {
-            nameInput.rows = 1;
-            countdownEl.style.display = '';
         });
 
         if (focusId === event.id) {
@@ -315,10 +295,10 @@ function render(focusId = null) {
         countdownEl.textContent = getCountdownText(event);
 
         nameContainer.appendChild(nameInput);
-        nameContainer.appendChild(countdownEl);
 
         // --- 2. Ячейка категории (метки) ---
         const labelCell = renderLabelCell(event, row);
+        labelCell.appendChild(countdownEl);
 
         // --- 3. Список дат ---
         const datesList = document.createElement('div');
