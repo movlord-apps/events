@@ -1,4 +1,4 @@
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.6';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -70,7 +70,10 @@ function openCalendarFor(targetInput, calendarBtn) {
     }
 
     requestAnimationFrame(() => {
-        console.log('[cal] rAF, cal visible:', cal ? cal.style.display : 'no cal');
+        console.log('[cal] rAF, cal className:', cal ? cal.className : 'no cal');
+        console.log('[cal] rAF, cal display:', cal ? getComputedStyle(cal).display : 'no cal');
+        console.log('[cal] rAF, cal visibility:', cal ? getComputedStyle(cal).visibility : 'no cal');
+        console.log('[cal] rAF, _fp.isOpen:', _fp.isOpen);
         if (cal) {
             cal.style.position = 'fixed';
             cal.style.top = (rect.bottom + 4) + 'px';
