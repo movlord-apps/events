@@ -1,4 +1,4 @@
-const APP_VERSION = '1.0';
+const APP_VERSION = '1.1';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -288,12 +288,24 @@ function render(focusId = null) {
             }
         });
 
-        nameInput.addEventListener('mouseenter', () => { nameInput.rows = 3; });
-        nameInput.addEventListener('mouseleave', () => {
-            if (document.activeElement !== nameInput) nameInput.rows = 1;
+        nameInput.addEventListener('mouseenter', () => {
+            nameInput.rows = 3;
+            countdownEl.style.display = 'none';
         });
-        nameInput.addEventListener('focus', () => { nameInput.rows = 3; });
-        nameInput.addEventListener('blur', () => { nameInput.rows = 1; });
+        nameInput.addEventListener('mouseleave', () => {
+            if (document.activeElement !== nameInput) {
+                nameInput.rows = 1;
+                countdownEl.style.display = '';
+            }
+        });
+        nameInput.addEventListener('focus', () => {
+            nameInput.rows = 3;
+            countdownEl.style.display = 'none';
+        });
+        nameInput.addEventListener('blur', () => {
+            nameInput.rows = 1;
+            countdownEl.style.display = '';
+        });
 
         if (focusId === event.id) {
             setTimeout(() => nameInput.focus(), 0);
