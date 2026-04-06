@@ -1,4 +1,4 @@
-const APP_VERSION = '1.7';
+const APP_VERSION = '1.8';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -572,8 +572,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // Парсит дату вида "dd.mm.yyyy" в объект Date. Возвращает null если пусто.
 function parseDate(str) {
     if (!str || str.trim() === '') return null;
+    // Строго дд.мм.гггг
+    if (!/^\d{2}\.\d{2}\.\d{4}$/.test(str.trim())) return null;
     const [d, m, y] = str.trim().split('.').map(Number);
-    return new Date(y, m - 1, d);
+    const date = new Date(y, m - 1, d);
+    // Проверяем что дата реальная (например 31.02 недопустима)
+    if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return null;
+    return date;
 }
 
 // Возвращает минимальную реальную дату события или null если дат нет.
