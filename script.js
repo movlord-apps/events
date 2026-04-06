@@ -1,4 +1,4 @@
-const APP_VERSION = '1.8';
+const APP_VERSION = '1.0';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -273,11 +273,27 @@ function render(focusId = null) {
         const nameContainer = document.createElement('div');
         nameContainer.className = 'name-container';
 
-        const nameInput = document.createElement('input');
+        const nameInput = document.createElement('textarea');
         nameInput.className = 'event-name-input';
         nameInput.value = event.name;
         nameInput.placeholder = 'Название события...';
         nameInput.dataset.eventId = event.id;
+        nameInput.rows = 1;
+
+        // Запрет переноса Enter в onkeydown — обрабатываем вручную
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const lines = nameInput.value.split('\n');
+                if (lines.length >= 3) e.preventDefault(); // не больше 3 строк
+            }
+        });
+
+        nameInput.addEventListener('mouseenter', () => { nameInput.rows = 3; });
+        nameInput.addEventListener('mouseleave', () => {
+            if (document.activeElement !== nameInput) nameInput.rows = 1;
+        });
+        nameInput.addEventListener('focus', () => { nameInput.rows = 3; });
+        nameInput.addEventListener('blur', () => { nameInput.rows = 1; });
 
         if (focusId === event.id) {
             setTimeout(() => nameInput.focus(), 0);

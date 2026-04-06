@@ -177,6 +177,12 @@ h1 {
     border-radius: 3px;
     outline: none;
     display: block;
+    resize: none;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    transition: height 0.1s;
 }
 
 .event-countdown {
