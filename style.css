@@ -590,6 +590,7 @@ h1 {
     gap: 6px;
     padding: 8px 10px;
     border-bottom: 1px solid #333;
+    order: -1;
 }
 
 .fp-quick-btn {
@@ -606,4 +607,9 @@ h1 {
 .fp-quick-btn:hover {
     background: #333;
     color: #fff;
+}
+
+.flatpickr-calendar {
+    display: flex !important;
+    flex-direction: column !important;
 }
