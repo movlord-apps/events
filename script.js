@@ -21,6 +21,29 @@ let isDirty = false;
 let _fp = null;
 let _fpTarget = null; // текущий input к которому привязан
 
+// --- Popup для описания даты ---
+let _descPopup = null;
+let _descPopupTimer = null;
+
+function initDescPopup() {
+    _descPopup = document.createElement('div');
+    _descPopup.className = 'desc-popup';
+    _descPopup.style.display = 'none';
+    document.body.appendChild(_descPopup);
+}
+
+function showDescPopup(input) {
+    // Показываем только если текст не влазит
+    if (input.scrollWidth <= input.clientWidth) return;
+    _descPopup.textContent = input.value;
+    _descPopup.style.display = 'block';
+}
+
+function hideDescPopup() {
+    clearTimeout(_descPopupTimer);
+    if (_descPopup) _descPopup.style.display = 'none';
+}
+
 function initGlobalFlatpickr() {
     const anchor = document.createElement('input');
     anchor.type = 'text';
@@ -247,6 +270,12 @@ function buildDateItem(event, dateObj, datesList) {
     };
 
     descInput.onblur = () => onDateDescBlur(event, dateObj);
+
+    descInput.addEventListener('mouseenter', () => {
+        _descPopupTimer = setTimeout(() => showDescPopup(descInput), 300);
+    });
+    descInput.addEventListener('mouseleave', hideDescPopup);
+    descInput.addEventListener('focus', hideDescPopup);
 
     dateItem.appendChild(topRow);
     dateItem.appendChild(descInput);
@@ -597,6 +626,7 @@ function saveSettings() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initGlobalFlatpickr();
+    initDescPopup();
     const local = localStorage.getItem('event_app_data');
     if (local) {
         state = JSON.parse(local);
