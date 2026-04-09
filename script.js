@@ -1,4 +1,4 @@
-const APP_VERSION = '1.1';
+const APP_VERSION = '1.0';
 console.log('App version:', APP_VERSION);
 
 let GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
@@ -31,7 +31,7 @@ function initGlobalFlatpickr() {
         locale: 'ru',
         dateFormat: 'd.m.Y',
         appendTo: document.body,
-        static: true,          // не закрывается при потере фокуса anchor
+        static: true,
         disableMobile: true,
         onChange(selectedDates, dateStr) {
             if (_fpTarget && dateStr) {
@@ -41,8 +41,51 @@ function initGlobalFlatpickr() {
             }
         },
         onClose() {
-            // не сбрасываем _fpTarget сразу — datechange должен успеть сработать
             setTimeout(() => { _fpTarget = null; }, 100);
+        },
+        onReady(selectedDates, dateStr, instance) {
+            // Панель быстрых кнопок — добавляем один раз
+            const panel = document.createElement('div');
+            panel.className = 'fp-quick-panel';
+
+            function applyOffset(days, months, years) {
+                const current = _fpTarget ? parseDate(_fpTarget.value) : null;
+                if (!current) return;
+                const d = new Date(current);
+                d.setDate(d.getDate() + days);
+                d.setMonth(d.getMonth() + months);
+                d.setFullYear(d.getFullYear() + years);
+                // Форматируем в дд.мм.гггг
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yy = d.getFullYear();
+                const dateStr = `${dd}.${mm}.${yy}`;
+                instance.setDate(dateStr, false);
+                if (_fpTarget) {
+                    _fpTarget.value = dateStr;
+                    _fpTarget.dispatchEvent(new Event('datechange', { bubbles: true }));
+                    _fp.close();
+                }
+            }
+
+            [
+                { label: '+д', days: 1, months: 0, years: 0 },
+                { label: '+м', days: 0, months: 1, years: 0 },
+                { label: '+г', days: 0, months: 0, years: 1 },
+            ].forEach(({ label, days, months, years }) => {
+                const btn = document.createElement('button');
+                btn.className = 'fp-quick-btn';
+                btn.textContent = label;
+                btn.type = 'button';
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    applyOffset(days, months, years);
+                });
+                panel.appendChild(btn);
+            });
+
+            instance.calendarContainer.appendChild(panel);
         }
     });
 }

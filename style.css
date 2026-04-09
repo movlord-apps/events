@@ -582,3 +582,28 @@ h1 {
 .event-name-link:hover {
     text-decoration: underline;
 }
+
+/* --- Быстрые кнопки в календаре --- */
+
+.fp-quick-panel {
+    display: flex;
+    gap: 6px;
+    padding: 8px 10px;
+    border-top: 1px solid #333;
+}
+
+.fp-quick-btn {
+    flex: 1;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: #ccc;
+    border-radius: 3px;
+    padding: 4px 0;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.fp-quick-btn:hover {
+    background: #333;
+    color: #fff;
+}
