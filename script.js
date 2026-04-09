@@ -35,7 +35,7 @@ function initDescPopup() {
 function showDescPopup(input, x, y) {
     if (input.scrollWidth <= input.clientWidth) return;
     _descPopup.textContent = input.value;
-    _descPopup.style.left = (x + 12) + 'px';
+    _descPopup.style.left = (x - 50) + 'px';
     _descPopup.style.top = (y + 12) + 'px';
     _descPopup.style.display = 'block';
 }
