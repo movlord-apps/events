@@ -85,7 +85,7 @@ function initGlobalFlatpickr() {
                 panel.appendChild(btn);
             });
 
-            instance.calendarContainer.appendChild(panel);
+            instance.calendarContainer.insertBefore(panel, instance.calendarContainer.firstChild);
         }
     });
 }
