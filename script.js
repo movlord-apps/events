@@ -32,10 +32,11 @@ function initDescPopup() {
     document.body.appendChild(_descPopup);
 }
 
-function showDescPopup(input) {
-    // Показываем только если текст не влазит
+function showDescPopup(input, x, y) {
     if (input.scrollWidth <= input.clientWidth) return;
     _descPopup.textContent = input.value;
+    _descPopup.style.left = (x + 12) + 'px';
+    _descPopup.style.top = (y + 12) + 'px';
     _descPopup.style.display = 'block';
 }
 
@@ -271,9 +272,10 @@ function buildDateItem(event, dateObj, datesList) {
 
     descInput.onblur = () => onDateDescBlur(event, dateObj);
 
-    descInput.addEventListener('mouseenter', () => {
-        _descPopupTimer = setTimeout(() => showDescPopup(descInput), 0);
+    descInput.addEventListener('mouseenter', (e) => {
+        _descPopupTimer = setTimeout(() => showDescPopup(descInput, e.clientX, e.clientY), 0);
     });
+
     descInput.addEventListener('mouseleave', hideDescPopup);
     descInput.addEventListener('focus', hideDescPopup);
 
