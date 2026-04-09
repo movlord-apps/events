@@ -272,7 +272,7 @@ function buildDateItem(event, dateObj, datesList) {
     descInput.onblur = () => onDateDescBlur(event, dateObj);
 
     descInput.addEventListener('mouseenter', () => {
-        _descPopupTimer = setTimeout(() => showDescPopup(descInput), 300);
+        _descPopupTimer = setTimeout(() => showDescPopup(descInput), 0);
     });
     descInput.addEventListener('mouseleave', hideDescPopup);
     descInput.addEventListener('focus', hideDescPopup);
