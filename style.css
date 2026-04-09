@@ -590,7 +590,6 @@ h1 {
     gap: 6px;
     padding: 8px 10px;
     border-bottom: 1px solid #333;
-    order: -1;
 }
 
 .fp-quick-btn {
@@ -609,7 +608,12 @@ h1 {
     color: #fff;
 }
 
-.flatpickr-calendar {
-    display: flex !important;
-    flex-direction: column !important;
+
+/* Панель быстрых кнопок уже первая в DOM — сбрасываем абсолютное позиционирование flatpickr-months */
+.flatpickr-calendar .flatpickr-months {
+    position: relative !important;
+}
+
+.flatpickr-calendar .flatpickr-innerContainer {
+    position: relative !important;
 }
