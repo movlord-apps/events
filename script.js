@@ -85,7 +85,13 @@ function initGlobalFlatpickr() {
                 panel.appendChild(btn);
             });
 
-            instance.calendarContainer.insertBefore(panel, instance.calendarContainer.firstChild);
+            // Вставляем после навигационной панели (.flatpickr-months)
+            const months = instance.calendarContainer.querySelector('.flatpickr-months');
+            if (months && months.nextSibling) {
+                instance.calendarContainer.insertBefore(panel, months.nextSibling);
+            } else {
+                instance.calendarContainer.appendChild(panel);
+            }
         }
     });
 }
