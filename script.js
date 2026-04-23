@@ -978,9 +978,7 @@ function formatCountdown(targetDate) {
 
     const diffTime = target - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
     if (diffDays < 0) return "наступило";
-    if (diffDays === 0) return "сегодня";
     if (diffDays > 365) return "> 1 года";
     if (diffDays > 30) {
         const months = Math.floor(diffDays / 30);
